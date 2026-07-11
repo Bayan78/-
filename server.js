@@ -10,6 +10,7 @@ const multer = require('multer');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 
 const KEY = process.env.POLLINATIONS_KEY || '';
 const REFDIR = path.join(os.tmpdir(), 'refs');
@@ -89,7 +90,8 @@ async function tryVideo(mdl, prompt, frameUrl, dur, ar) {
   let url = 'https://gen.pollinations.ai/video/' +
     encodeURIComponent(prompt || 'the character comes to life, subtle natural motion, animated') +
     '?model=' + encodeURIComponent(mdl) + '&duration=' + dur + '&aspectRatio=' + encodeURIComponent(ar);
-  if (frameUrl) url += '&image=' + encodeURIComponent(frameUrl);
+  // image= ДОЛЖЕН быть последним и без своих query-параметров (чистый URL)
+  if (frameUrl) url += '&image=' + frameUrl;
   const ctrl = new AbortController();
   const to = setTimeout(() => ctrl.abort(), 240000);
   try {
@@ -116,10 +118,25 @@ app.post('/animate', async (req, res) => {
   const { frameUrl, prompt, duration, aspectRatio, model } = req.body || {};
   const dur = Math.min(Math.max(parseInt(duration) || 5, 2), 8);
   const ar = aspectRatio || '16:9';
+
+  // рехостим кадр в чистую ссылку без query-параметров (иначе видео-валидатор ругается)
+  let cleanImg = '';
+  if (frameUrl) {
+    try {
+      const ir = await fetch(frameUrl);
+      if (ir.ok) {
+        const buf = Buffer.from(await ir.arrayBuffer());
+        const name = crypto.randomUUID() + '.jpg';
+        fs.writeFileSync(path.join(REFDIR, name), buf);
+        cleanImg = publicBase(req) + '/ref/' + name;
+      }
+    } catch (e) { console.error('reframe fetch failed:', e.message); }
+  }
+
   const models = model ? [model] : VIDEO_MODELS;
   let last = { status: 0, detail: 'no attempt' };
   for (const mdl of models) {
-    const out = await tryVideo(mdl, prompt, frameUrl, dur, ar);
+    const out = await tryVideo(mdl, prompt, cleanImg, dur, ar);
     if (out.ok) {
       res.set('Content-Type', 'video/mp4'); res.set('Cache-Control', 'no-store');
       console.log('animate OK via model:', mdl);
