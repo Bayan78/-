@@ -81,48 +81,54 @@ app.post('/generate', async (req, res) => {
   }
 });
 
-// image-to-video: оживляем кадр (нужен POLLINATIONS_KEY с Pollen-кредитами)
-const VIDEO_MODEL = process.env.VIDEO_MODEL || 'seedance';
-app.post('/animate', async (req, res) => {
+// image-to-video: оживляем кадр. Сервер сам перебирает доступные видео-модели.
+const VIDEO_MODELS = (process.env.VIDEO_MODEL ? [process.env.VIDEO_MODEL] : [])
+  .concat(['wan-fast', 'wan', 'seedance-2.0', 'ltx-2', 'nova-reel', 'seedance']);
+
+async function tryVideo(mdl, prompt, frameUrl, dur, ar) {
+  let url = 'https://gen.pollinations.ai/image/' +
+    encodeURIComponent(prompt || 'the character comes to life, subtle natural motion, animated') +
+    '?model=' + encodeURIComponent(mdl) + '&duration=' + dur + '&aspectRatio=' + encodeURIComponent(ar);
+  if (frameUrl) url += '&image=' + encodeURIComponent(frameUrl);
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), 240000);
   try {
-    if (!KEY) return res.status(400).json({ error: 'Для видео нужен POLLINATIONS_KEY' });
-    const { frameUrl, prompt, duration, aspectRatio, model } = req.body || {};
-    const mdl = model || VIDEO_MODEL;
-    const dur = Math.min(Math.max(parseInt(duration) || 5, 2), 8);
-    const ar = aspectRatio || '16:9';
-    let url = 'https://gen.pollinations.ai/image/' +
-      encodeURIComponent(prompt || 'the character comes to life, subtle natural motion, animated') +
-      '?model=' + encodeURIComponent(mdl) + '&duration=' + dur + '&aspectRatio=' + encodeURIComponent(ar);
-    if (frameUrl) url += '&image=' + encodeURIComponent(frameUrl);
-
-    const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), 240000);
-    let r;
-    try { r = await fetch(url, { headers: { Authorization: 'Bearer ' + KEY }, signal: ctrl.signal }); }
-    finally { clearTimeout(to); }
-
+    const r = await fetch(url, { headers: { Authorization: 'Bearer ' + KEY }, signal: ctrl.signal });
     const ct = (r.headers.get('content-type') || '');
-    if (!r.ok) { const tx = await r.text().catch(() => ''); return res.status(502).json({ error: 'video ' + r.status, detail: tx.slice(0, 400) }); }
-
-    if (ct.includes('video') || ct.includes('octet-stream') || ct.includes('mp4')) {
-      const buf = Buffer.from(await r.arrayBuffer());
-      res.set('Content-Type', 'video/mp4'); res.set('Cache-Control', 'no-store');
-      return res.send(buf);
+    if (r.ok && (ct.includes('video') || ct.includes('octet-stream') || ct.includes('mp4'))) {
+      return { ok: true, buf: Buffer.from(await r.arrayBuffer()) };
     }
-    // иначе — вероятно JSON/текст со ссылкой на видео
-    const txt = await r.text();
-    let vurl = '';
-    try { const j = JSON.parse(txt); vurl = j.url || (j.data && j.data[0] && (j.data[0].url || j.data[0].video)) || j.output || ''; }
-    catch (e) { if (/^https?:\/\/\S+$/.test(txt.trim())) vurl = txt.trim(); }
-    if (!vurl) return res.status(502).json({ error: 'нет ссылки на видео', detail: txt.slice(0, 400) });
-    const vr = await fetch(vurl);
-    const buf = Buffer.from(await vr.arrayBuffer());
-    res.set('Content-Type', vr.headers.get('content-type') || 'video/mp4'); res.set('Cache-Control', 'no-store');
-    res.send(buf);
+    const txt = await r.text().catch(() => '');
+    if (r.ok) { // возможно JSON со ссылкой
+      let vurl = '';
+      try { const j = JSON.parse(txt); vurl = j.url || (j.data && j.data[0] && (j.data[0].url || j.data[0].video)) || j.output || ''; }
+      catch (e) { if (/^https?:\/\/\S+$/.test(txt.trim())) vurl = txt.trim(); }
+      if (vurl) { const vr = await fetch(vurl); return { ok: true, buf: Buffer.from(await vr.arrayBuffer()) }; }
+    }
+    return { ok: false, status: r.status, detail: txt.slice(0, 500) };
   } catch (e) {
-    console.error('animate error:', e);
-    res.status(500).json({ error: String((e && e.message) || e) });
+    return { ok: false, status: 0, detail: String((e && e.message) || e) };
+  } finally { clearTimeout(to); }
+}
+
+app.post('/animate', async (req, res) => {
+  if (!KEY) return res.status(400).json({ error: 'Для видео нужен POLLINATIONS_KEY' });
+  const { frameUrl, prompt, duration, aspectRatio, model } = req.body || {};
+  const dur = Math.min(Math.max(parseInt(duration) || 5, 2), 8);
+  const ar = aspectRatio || '16:9';
+  const models = model ? [model] : VIDEO_MODELS;
+  let last = { status: 0, detail: 'no attempt' };
+  for (const mdl of models) {
+    const out = await tryVideo(mdl, prompt, frameUrl, dur, ar);
+    if (out.ok) {
+      res.set('Content-Type', 'video/mp4'); res.set('Cache-Control', 'no-store');
+      console.log('animate OK via model:', mdl);
+      return res.send(out.buf);
+    }
+    last = out;
+    console.error('animate model FAILED:', mdl, '->', out.status, out.detail);
   }
+  res.status(502).json({ error: 'video ' + last.status, model_tried: models, detail: last.detail });
 });
 
 const PORT = process.env.PORT || 3000;
