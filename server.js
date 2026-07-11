@@ -83,10 +83,10 @@ app.post('/generate', async (req, res) => {
 
 // image-to-video: оживляем кадр. Сервер сам перебирает доступные видео-модели.
 const VIDEO_MODELS = (process.env.VIDEO_MODEL ? [process.env.VIDEO_MODEL] : [])
-  .concat(['wan-fast', 'wan', 'seedance-2.0', 'ltx-2', 'nova-reel', 'seedance']);
+  .concat(['seedance', 'wan', 'wan-fast', 'ltx-2', 'nova-reel', 'seedance-2.0', 'veo']);
 
 async function tryVideo(mdl, prompt, frameUrl, dur, ar) {
-  let url = 'https://gen.pollinations.ai/image/' +
+  let url = 'https://gen.pollinations.ai/video/' +
     encodeURIComponent(prompt || 'the character comes to life, subtle natural motion, animated') +
     '?model=' + encodeURIComponent(mdl) + '&duration=' + dur + '&aspectRatio=' + encodeURIComponent(ar);
   if (frameUrl) url += '&image=' + encodeURIComponent(frameUrl);
