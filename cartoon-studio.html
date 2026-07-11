@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>МультСтудия · AI-генератор мультфильмов</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12101c; --panel:#1b1830; --panel-2:#241f3d; --line:#332c52;
+    --ink:#f3f0ff; --muted:#a49dc4; --dim:#6d668f;
+    --violet:#8b5cf6; --coral:#ff5d73; --amber:#ffc44d; --teal:#38e0c8;
+    --grad:linear-gradient(120deg,#ff5d73 0%,#8b5cf6 55%,#38e0c8 130%);
+    --radius:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(900px 460px at 82% -8%, rgba(139,92,246,.22), transparent 60%),
+      radial-gradient(700px 460px at -6% 8%, rgba(255,93,115,.18), transparent 55%),
+      var(--bg);
+    color:var(--ink); font-family:"Inter",system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+    padding:max(16px,env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:560px;margin:0 auto}
+  h1,h2,h3,.disp{font-family:"Baloo 2",sans-serif}
+
+  header{display:flex;align-items:center;gap:12px;margin:4px 2px 14px}
+  .logo{width:46px;height:46px;border-radius:14px;background:var(--grad);flex:none;position:relative;
+    box-shadow:0 10px 26px -8px rgba(139,92,246,.6);display:flex;align-items:center;justify-content:center;font-size:24px}
+  h1{margin:0;font-size:23px;font-weight:800;line-height:1;letter-spacing:.01em}
+  h1 b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .badge-free{display:inline-block;margin-top:5px;font-size:11px;font-weight:700;font-family:"Baloo 2";
+    color:#12101c;background:var(--teal);border-radius:99px;padding:2px 9px}
+
+  .langbar{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:6px}
+  .langbar button{flex:1;border:none;background:transparent;color:var(--muted);font-family:"Baloo 2";font-weight:700;
+    font-size:13px;padding:8px 4px;border-radius:8px;cursor:pointer;transition:.15s}
+  .langbar button.on{background:var(--grad);color:#fff}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:12px}
+  .card h2{font-family:"Baloo 2";font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);margin:0 0 14px;display:flex;align-items:center;gap:8px}
+  .field{margin-bottom:15px}.field:last-child{margin-bottom:0}
+  .label{font-size:13px;font-weight:500;margin-bottom:8px;display:flex;justify-content:space-between}
+  .label b{color:var(--amber);font-variant-numeric:tabular-nums}
+  textarea,input[type=text]{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:11px;
+    color:var(--ink);font-family:inherit;font-size:14.5px;padding:12px;outline:none;resize:vertical}
+  textarea:focus,input[type=text]:focus{border-color:var(--violet)}
+  textarea{min-height:74px;line-height:1.5}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chips button{border:1px solid var(--line);background:var(--panel-2);color:var(--muted);font-family:"Baloo 2";
+    font-weight:600;font-size:13.5px;padding:8px 13px;border-radius:10px;cursor:pointer;transition:.15s}
+  .chips button.on{background:var(--grad);color:#fff;border-color:transparent}
+  .seg{display:flex;gap:6px;background:var(--panel-2);border-radius:11px;padding:4px}
+  .seg button{flex:1;border:none;background:transparent;color:var(--muted);font-family:"Baloo 2";font-weight:600;
+    font-size:13.5px;padding:9px 4px;border-radius:8px;cursor:pointer;transition:.15s}
+  .seg button.on{background:var(--ink);color:var(--bg)}
+  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:99px;background:var(--panel-2);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--ink);cursor:pointer;box-shadow:0 0 0 5px rgba(139,92,246,.25)}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-radius:50%;background:var(--ink);cursor:pointer}
+  .chk{display:flex;align-items:center;gap:9px;margin-top:10px;font-size:13px;color:var(--muted);cursor:pointer}
+  .chk input{width:18px;height:18px;accent-color:var(--coral)}
+
+  .btn{border:none;cursor:pointer;font-family:"Baloo 2";font-weight:700;border-radius:12px;display:inline-flex;
+    align-items:center;justify-content:center;gap:8px;transition:.15s;font-size:15px}
+  .btn:active{transform:translateY(1px)}.btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);padding:11px 14px}
+  .btn-ghost:hover{border-color:var(--dim)}
+  .btn-grad{background:var(--grad);color:#fff;padding:13px 16px;box-shadow:0 12px 28px -12px rgba(139,92,246,.8)}
+  .btn-block{width:100%}
+  .row2{display:flex;gap:10px;margin-top:12px}.row2>*{flex:1}
+
+  .scene{background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:12px;margin-bottom:10px;display:flex;gap:12px}
+  .scene .thumb{width:76px;height:76px;border-radius:9px;flex:none;background:#0d0b16;border:1px solid var(--line);
+    overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .scene .thumb img{width:100%;height:100%;object-fit:cover}
+  .scene .thumb .num{position:absolute;top:3px;left:4px;font-family:"Baloo 2";font-weight:800;font-size:12px;background:rgba(0,0,0,.55);border-radius:6px;padding:0 6px}
+  .scene .thumb .ph{color:var(--dim);font-size:22px}
+  .scene .thumb .regen{position:absolute;inset:0;background:rgba(13,11,22,.6);display:none;align-items:center;justify-content:center;font-size:20px}
+  .scene .thumb:hover .regen{display:flex}
+  .scene .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+  .scene .body input{font-size:13.5px;padding:9px 10px}
+  .scene .body .sfx{background:var(--panel);border:1px solid var(--line);border-radius:9px;color:var(--muted);
+    font-family:inherit;font-size:12.5px;padding:7px 9px;outline:none;cursor:pointer}
+  .scene .body .scrow{display:flex;gap:7px}
+  .scene .body .scrow select{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;color:var(--muted);
+    font-family:inherit;font-size:12px;padding:7px 8px;outline:none;cursor:pointer}
+  .scene .scbtns{display:flex;flex-direction:column;gap:4px;align-self:stretch}
+  .scene .scbtns button{width:30px;flex:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--muted);
+    cursor:pointer;font-size:13px;line-height:1;transition:.15s}
+  .scene .scbtns button:hover:not(:disabled){border-color:var(--purple);color:var(--ink)}
+  .scene .scbtns button:disabled{opacity:.3;cursor:default}
+  .scene .scbtns .del{color:var(--coral);border-color:transparent}
+  .scene .scbtns .del:hover{border-color:var(--coral);color:var(--coral)}
+  .scene .del{align-self:flex-start;color:var(--dim);background:none;border:none;font-size:16px;cursor:pointer;padding:2px 4px}
+  .scene .del:hover{color:var(--coral)}
+  .addscene{width:100%;border:1.5px dashed var(--line);background:transparent;color:var(--muted);font-family:"Baloo 2";
+    font-weight:600;font-size:14px;padding:12px;border-radius:12px;cursor:pointer;transition:.15s}
+  .addscene:hover{border-color:var(--violet);color:var(--violet)}
+
+  .stage{border-radius:var(--radius);overflow:hidden;background:#000;position:relative;border:1px solid var(--line);
+    aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;margin-top:12px}
+  .stage canvas{max-width:100%;max-height:100%;display:block}
+  .stage .empty{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;
+    color:var(--dim);text-align:center;padding:24px;font-size:14px}
+  .stage .badge{position:absolute;top:10px;left:10px;background:rgba(13,11,22,.72);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:99px;padding:5px 11px;font-size:11px;font-weight:700;font-family:"Baloo 2"}
+  .stage.rec .badge{background:var(--coral);border-color:var(--coral);color:#fff;animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.5}}
+
+  .prog{height:8px;background:var(--panel-2);border-radius:99px;overflow:hidden;margin-top:12px;display:none}
+  .prog.on{display:block}
+  .prog i{display:block;height:100%;width:0;background:var(--grad);border-radius:99px;transition:width .25s}
+  .status{font-size:12.5px;color:var(--muted);margin-top:8px;text-align:center;min-height:16px}
+
+  .hint{font-size:11.5px;color:var(--dim);margin-top:14px;text-align:center;line-height:1.5}
+  .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#241f3d;border:1px solid var(--line);
+    color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90%}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .guide-fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:55;background:var(--grad);color:#fff;
+    border:none;border-radius:99px;padding:12px 18px;font-family:"Baloo 2";font-weight:800;font-size:15px;cursor:pointer;
+    box-shadow:0 12px 30px -8px rgba(139,92,246,.7)}
+  .guide-fab:active{transform:translateY(1px)}
+  .guide-modal{position:fixed;inset:0;z-index:70;background:rgba(8,6,16,.82);backdrop-filter:blur(6px);display:none;
+    align-items:flex-start;justify-content:center;padding:24px 14px;overflow-y:auto}
+  .guide-modal.show{display:flex}
+  .guide-box{background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:560px;width:100%;padding:22px;position:relative;margin:auto}
+  .guide-x{position:absolute;top:14px;right:14px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:15px}
+  #guideBody h3{font-family:"Baloo 2";font-size:20px;margin:0 0 6px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #guideBody h4{font-family:"Baloo 2";font-size:15px;margin:18px 0 6px;color:var(--amber)}
+  #guideBody p{font-size:14px;line-height:1.6;color:#d7d2ec;margin:6px 0}
+  #guideBody ol,#guideBody ul{margin:6px 0;padding-left:20px}
+  #guideBody li{font-size:14px;line-height:1.6;color:#d7d2ec;margin:5px 0}
+  #guideBody b{color:#fff}
+  #guideBody .tip{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:13px;margin:10px 0;color:var(--muted)}
+  #heroRefPrev{display:flex;align-items:center;gap:10px;margin-top:10px}
+  #heroRefPrev img{width:64px;height:64px;border-radius:10px;object-fit:cover;border:2px solid var(--teal)}
+  #heroRefPrev span{font-size:12.5px;color:var(--teal);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="langbar" id="langbar">
+    <button data-l="ru" class="on">Рус</button>
+    <button data-l="kk">Қаз</button>
+    <button data-l="tr">Türk</button>
+    <button data-l="en">Eng</button>
+  </div>
+
+  <header>
+    <div class="logo">🎬</div>
+    <div>
+      <h1>Мульт<b>Студия</b></h1>
+      <span class="badge-free" data-i18n="badge">бесплатно · без ключей</span>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2 data-i18n="idea_title">💡 Идея мультфильма</h2>
+    <div class="field">
+      <textarea id="idea" data-i18n-ph="idea_ph"></textarea>
+    </div>
+    <div class="row2" style="margin-top:0">
+      <div style="flex:1.4">
+        <div class="label"><span data-i18n="scenes_count">Сколько сцен</span> <b id="nsV">5</b></div>
+        <input type="range" id="nScenes" min="3" max="15" step="1" value="5">
+      </div>
+      <button class="btn btn-ghost" id="autoBtn" data-i18n="auto_btn" style="flex:1;align-self:flex-end;height:44px">✨ Придумать сцены</button>
+    </div>
+    <div class="row2">
+      <div style="flex:1">
+        <div class="label"><span data-i18n="eps_count">Сколько серий</span> <b id="nEpsV">3</b></div>
+        <input type="range" id="nEps" min="2" max="8" step="1" value="3">
+      </div>
+      <button class="btn btn-grad" id="seriesBtn" data-i18n="series_all" style="flex:1.2;align-self:flex-end;height:44px">✨ Весь сериал</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="tpl_title">🎁 Шаблоны</h2>
+    <div class="chips" id="tplChips"></div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="style_title">🎨 Стиль и герой</h2>
+    <div class="field">
+      <div class="label" data-i18n="style_label">Стиль рисовки</div>
+      <div class="chips" id="styleChips">
+        <button data-s="pixar" class="on">3D Pixar</button>
+        <button data-s="anime" data-i18n="st_anime">Аниме</button>
+        <button data-s="disney" data-i18n="st_disney">Дисней</button>
+        <button data-s="comic" data-i18n="st_comic">Комикс</button>
+        <button data-s="clay" data-i18n="st_clay">Пластилин</button>
+        <button data-s="water" data-i18n="st_water">Акварель</button>
+        <button data-s="flat" data-i18n="st_flat">Флэт</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="label" data-i18n="hero_label">Главный герой (для единообразия во всех сценах)</div>
+      <input type="text" id="hero" data-i18n-ph="hero_ph">
+      <label class="chk"><input type="checkbox" id="consistOn"> <span data-i18n="consist_toggle">🧬 Стабильный герой (одно лицо во всех кадрах)</span></label>
+      <div class="row2" style="margin-top:8px">
+        <button class="btn btn-ghost btn-block" id="heroRefBtn" data-i18n="heroref_btn">🧬 Создать эталон героя</button>
+      </div>
+      <div class="row2" style="margin-top:8px">
+        <button class="btn btn-ghost btn-block" id="heroPhotoBtn" data-i18n="herophoto_btn">📷 Эталон из своего фото</button>
+      </div>
+      <div id="heroRefPrev"></div>
+      <div class="label" style="margin-top:12px" data-i18n="backend_label">Сервер генерации (необязательно)</div>
+      <input type="text" id="genBackend" placeholder="https://your-gen.up.railway.app">
+    </div>
+    <div class="field">
+      <div class="label" data-i18n="series_label">Название сериала (общее для всех серий)</div>
+      <input type="text" id="seriesTitle" data-i18n-ph="series_ph" maxlength="40">
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <div class="label" data-i18n="title_label">Заставка серии (название эпизода)</div>
+      <input type="text" id="title" data-i18n-ph="title_ph" maxlength="40">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="ep_title">📺 Серии</h2>
+    <div class="chips" id="epBar"></div>
+    <button class="btn btn-ghost btn-block" id="genAllBtn" data-i18n="genall_btn" style="margin-top:12px">🎨 Кадры для всех серий</button>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="intro_card">🎬 Заставка сериала</h2>
+    <div class="field">
+      <div class="label" data-i18n="jingle_label">Интро-джингл</div>
+      <div class="chips" id="jingleChips">
+        <button data-j="none" data-i18n="none">Нет</button>
+        <button data-j="fanfare" data-i18n="j_fanfare">Фанфары</button>
+        <button data-j="magic" class="on" data-i18n="j_magic">Магия</button>
+        <button data-j="playful" data-i18n="j_playful">Игривый</button>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <div class="label" data-i18n="intro_art_label">Фирменная картинка-заставка (общая для всех серий)</div>
+      <div class="row2" style="margin-top:0">
+        <button class="btn btn-grad" id="introGenBtn" data-i18n="intro_gen">🎨 Сгенерировать заставку</button>
+        <button class="btn btn-ghost" id="introClearBtn" data-i18n="intro_clear" style="flex:.6">✕</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="outroOn" checked> <span data-i18n="outro_toggle">🏁 Титры в конце серии</span></label>
+      <input type="text" id="outroText" data-i18n-ph="outro_ph" maxlength="30" style="margin-top:8px">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="scenes_title">🎞 Сцены</h2>
+    <div id="sceneList"></div>
+    <button class="addscene" id="addScene" data-i18n="add_scene">+ Добавить сцену</button>
+    <div class="row2" style="margin-top:10px">
+      <button class="btn btn-ghost" id="autoSfxBtn" data-i18n="autosfx">🔊 Авто-звук по смыслу</button>
+    </div>
+    <button class="btn btn-grad btn-block" id="genBtn" data-i18n="gen_btn" style="margin-top:10px">🎨 Сгенерировать кадры</button>
+    <div class="prog" id="prog"><i id="progBar"></i></div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="film_title">🎬 Мультфильм</h2>
+    <div class="field">
+      <div class="label" data-i18n="format_label">Формат</div>
+      <div class="seg" id="ratio">
+        <button data-w="1280" data-h="720" class="on">16:9</button>
+        <button data-w="720" data-h="1280">9:16</button>
+        <button data-w="1024" data-h="1024">1:1</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="label"><span data-i18n="dur_label">Секунд на сцену</span> <b id="durV">3с</b></div>
+      <input type="range" id="dur" min="2" max="8" step="0.5" value="3">
+    </div>
+    <div class="field">
+      <div class="label" data-i18n="trans_label">Переход между сценами</div>
+      <div class="seg" id="transSeg">
+        <button data-tr="fade" class="on" data-i18n="tr_fade">Плавно</button>
+        <button data-tr="slide" data-i18n="tr_slide">Сдвиг</button>
+        <button data-tr="zoom" data-i18n="tr_zoom">Зум</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="label" data-i18n="cap_label">Стиль реплик</div>
+      <div class="seg" id="capSeg">
+        <button data-cs="subtitle" class="on" data-i18n="cap_sub">Субтитры</button>
+        <button data-cs="bubble" data-i18n="cap_bub">Облачко</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="label" data-i18n="music_label">Музыка</div>
+      <div class="chips" id="musicChips">
+        <button data-p="none" data-i18n="none">Нет</button>
+        <button data-p="chill" class="on">Chill</button>
+        <button data-p="energetic" data-i18n="m_fun">Весёлая</button>
+        <button data-p="lofi">Lo-Fi</button>
+        <button data-p="cinematic" data-i18n="m_cinema">Кино</button>
+      </div>
+      <div class="row2" style="margin-top:8px">
+        <button class="btn btn-ghost btn-block" id="ownMusicBtn" data-i18n="music_own">🎵 Своя музыка</button>
+      </div>
+      <div id="ownMusicName" style="font-size:12.5px;color:var(--teal);margin-top:6px;font-weight:600"></div>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <div class="label" data-i18n="voice_label">Озвучка (голос читает реплики)</div>
+      <div class="seg" id="voiceSeg">
+        <button data-v="off" class="on" data-i18n="voice_off">Выкл</button>
+        <button data-v="nova" data-i18n="voice_f">Женский</button>
+        <button data-v="onyx" data-i18n="voice_m">Мужской</button>
+        <button data-v="shimmer" data-i18n="voice_soft">Мягкий</button>
+      </div>
+      <div class="label" style="margin-top:12px" data-i18n="narr_label">Закадровый рассказчик (одна озвучка на весь мультик)</div>
+      <textarea id="narrator" data-i18n-ph="narr_ph" style="min-height:56px"></textarea>
+      <label class="chk"><input type="checkbox" id="sfxOn" checked> <span data-i18n="sfx_toggle">🎉 Мультяшные звуки на переходах</span></label>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="cv" width="1280" height="720"></canvas>
+      <div class="badge" id="badge">16:9</div>
+      <div class="empty" id="empty" data-i18n="stage_empty">Сгенерируй кадры — здесь появится превью мультфильма</div>
+    </div>
+
+    <div class="row2">
+      <button class="btn btn-ghost" id="playBtn" data-i18n="preview" disabled>▶ Превью</button>
+      <button class="btn btn-grad" id="exportBtn" data-i18n="export" disabled>⬇ Собрать мультфильм</button>
+    </div>
+    <div class="row2">
+      <button class="btn btn-ghost btn-block" id="batchBtn" data-i18n="batch_btn">📦 Собрать все серии</button>
+    </div>
+    <div class="row2">
+      <button class="btn btn-ghost btn-block" id="multiBtn" data-i18n="multi_btn">🌍 Собрать на 4 языках</button>
+    </div>
+    <div class="row2">
+      <button class="btn btn-grad btn-block" id="vidBtn" data-i18n="vid_btn">🎬 Собрать живое видео</button>
+    </div>
+    <div class="hint" data-i18n="vid_note" style="margin-top:8px">Каждая сцена станет движущимся клипом (нужен сервер с ключом Pollinations). Долго и тратит Pollen.</div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="mp4_title">🎞 Экспорт в MP4 (необязательно)</h2>
+    <div class="field" style="margin-bottom:0">
+      <div class="label" data-i18n="mp4_label">Адрес твоего mp4-сервера (Railway)</div>
+      <input type="text" id="mp4url" placeholder="https://your-app.up.railway.app">
+      <label class="chk"><input type="checkbox" id="mp4on"> <span data-i18n="mp4_chk">Сразу собрать в MP4</span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="pub_title">🚀 Публикация</h2>
+    <div class="field">
+      <div class="label" data-i18n="meta_label">Заголовок / описание / хэштеги <button id="metaGen" class="btn btn-ghost" style="padding:5px 10px;font-size:12px" data-i18n="meta_gen">✨ Сгенерировать</button></div>
+      <input type="text" id="metaTitle" data-i18n-ph="meta_title_ph" style="margin-bottom:8px">
+      <textarea id="metaDesc" data-i18n-ph="meta_desc_ph" style="min-height:56px;margin-bottom:8px"></textarea>
+      <input type="text" id="metaTags" data-i18n-ph="meta_tags_ph">
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <div class="row2" style="margin-top:0">
+        <button class="btn btn-grad" id="shareBtn" data-i18n="share_btn">📤 Поделиться</button>
+        <button class="btn btn-ghost" id="copyMetaBtn" data-i18n="copy_btn">📋 Копировать описание</button>
+      </div>
+      <div class="row2">
+        <button class="btn btn-ghost" id="ytBtn">▶ YouTube</button>
+        <button class="btn btn-ghost" id="ttBtn">♪ TikTok</button>
+      </div>
+      <div class="row2">
+        <button class="btn btn-ghost btn-block" id="thumbBtn" data-i18n="thumb_btn">🖼 Обложка</button>
+      </div>
+      <div class="label" style="margin-top:12px" data-i18n="tg_label">Твой Telegram-постер (Railway)</div>
+      <input type="text" id="tgUrl" placeholder="https://your-poster.up.railway.app">
+      <button class="btn btn-grad btn-block" id="tgBtn" data-i18n="tg_btn" style="margin-top:8px">📢 Отправить в Telegram-канал</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="proj_title">💾 Проект</h2>
+    <div class="row2" style="margin-top:0">
+      <button class="btn btn-ghost" id="saveProj" data-i18n="proj_save">💾 Сохранить</button>
+      <button class="btn btn-ghost" id="loadProj" data-i18n="proj_load">📂 Открыть</button>
+    </div>
+  </div>
+
+  <div class="hint" data-i18n="hint">
+    Всё бесплатно: кадры рисует Pollinations, мультик собирается в браузере (.webm), озвучка — бесплатный TTS.
+  </div>
+</div>
+
+<input type="file" id="projInput" accept=".json,application/json" style="display:none">
+<input type="file" id="heroPhotoInput" accept="image/*" style="display:none">
+<input type="file" id="ownMusicInput" accept="audio/*" style="display:none">
+<button id="guideBtn" class="guide-fab" data-i18n="guide_btn">❓ Гайд</button>
+<div class="guide-modal" id="guideModal">
+  <div class="guide-box">
+    <button class="guide-x" id="guideClose">✕</button>
+    <div id="guideBody"></div>
+    <button class="btn btn-grad btn-block" id="guideClose2" data-i18n="guide_close" style="margin-top:14px">Закрыть</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+try{ if(window.Telegram&&Telegram.WebApp){ Telegram.WebApp.ready(); Telegram.WebApp.expand(); } }catch(e){}
+const $ = s=>document.querySelector(s);
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+const cv=$('#cv'), ctx=cv.getContext('2d');
+
+/* ================= i18n ================= */
+const T={
+ ru:{badge:"бесплатно · без ключей",idea_title:"💡 Идея мультфильма",
+   idea_ph:"Напр.: маленький кот-космонавт находит планету из мороженого и заводит друга-инопланетянина",
+   scenes_count:"Сколько сцен",auto_btn:"✨ Придумать сцены",style_title:"🎨 Стиль и герой",style_label:"Стиль рисовки",
+   st_anime:"Аниме",st_disney:"Дисней",st_comic:"Комикс",st_clay:"Пластилин",st_water:"Акварель",st_flat:"Флэт",
+   hero_label:"Главный герой (для единообразия во всех сценах)",hero_ph:"Напр.: рыжий котёнок в белом скафандре с синим шлемом",
+   title_label:"Заставка (название мультфильма)",title_ph:"Напр.: КОСМО-КОТ",scenes_title:"🎞 Сцены",add_scene:"+ Добавить сцену",
+   gen_btn:"🎨 Сгенерировать кадры",film_title:"🎬 Мультфильм",format_label:"Формат",dur_label:"Секунд на сцену",
+   music_label:"Музыка",none:"Нет",m_fun:"Весёлая",m_cinema:"Кино",voice_label:"Озвучка (голос читает реплики)",
+   voice_off:"Выкл",voice_f:"Женский",voice_m:"Мужской",voice_soft:"Мягкий",preview:"▶ Превью",export:"⬇ Собрать мультфильм",
+   stage_empty:"Сгенерируй кадры — здесь появится превью мультфильма",mp4_title:"🎞 Экспорт в MP4 (необязательно)",
+   mp4_label:"Адрес твоего mp4-сервера (Railway)",mp4_chk:"Сразу собрать в MP4",
+   hint:"Всё бесплатно: кадры рисует Pollinations, мультик собирается в браузере (.webm), озвучка — бесплатный TTS.",
+   sc_prompt:"Что происходит в сцене",sc_caption:"Реплика / подпись",sec:"с",
+   st_gen:"Рисую кадр",st_of:"из",st_done:"Готово! Кадры нарисованы.",st_voice:"Озвучиваю сцену",st_think:"Думаю…",
+   need_idea:"Сначала опиши идею мультфильма",need_scene:"Добавь хотя бы одну сцену",done_scenes:"сцен готово. Жми «Сгенерировать кадры».",
+   mp4fail:"MP4-сервер недоступен — сохранил .webm",voicefail:"Озвучка недоступна (сервис/CORS) — собрал без неё",
+   narr_label:"Закадровый рассказчик (одна озвучка на весь мультик)",narr_ph:"Напр.: Жил-был на далёкой планете маленький космический кот…",
+   pub_title:"🚀 Публикация",meta_label:"Заголовок / описание / хэштеги",meta_gen:"✨ Сгенерировать",
+   meta_title_ph:"Заголовок ролика",meta_desc_ph:"Описание для YouTube/TikTok",meta_tags_ph:"#хэштеги через пробел",
+   share_btn:"📤 Поделиться",copy_btn:"📋 Копировать описание",proj_title:"💾 Проект",proj_save:"💾 Сохранить",proj_load:"📂 Открыть",
+   st_narr:"Озвучиваю рассказчика…",share_fallback:"Файл скачан — загрузи его вручную",
+   yt_hint:"Файл скачан, описание скопировано — перетащи видео во вкладку YouTube",
+   tt_hint:"Файл скачан, описание скопировано — перетащи видео во вкладку TikTok",
+   copied:"Описание скопировано",saved:"Проект сохранён",loaded:"Проект загружен",meta_done:"Готово: заголовок и хэштеги",building:"Собираю видео…",tpl_title:"🎁 Шаблоны",series_label:"Название сериала (общее для всех серий)",series_ph:"Напр.: КОСМО-КОТ",ep_title:"📺 Серии",ep_word:"Серия",ep_add:"＋ Серия",ep_del:"🗑 Удалить серию",tpl_ok:"Шаблон загружен — жми «Сгенерировать кадры»",ep_min:"Нужна хотя бы одна серия",sfx_toggle:"🎉 Мультяшные звуки на переходах",sfx_label:"Звук сцены",eps_count:"Сколько серий",series_all:"✨ Весь сериал",intro_card:"🎬 Заставка сериала",jingle_label:"Интро-джингл",j_fanfare:"Фанфары",j_magic:"Магия",j_playful:"Игривый",intro_art_label:"Фирменная картинка-заставка (общая для всех серий)",intro_gen:"🎨 Сгенерировать заставку",intro_clear:"✕",autosfx:"🔊 Авто-звук по смыслу",intro_done:"Заставка готова!",series_done:"серий придумано — открывай и генерируй кадры",sfx_done:"Звуки подобраны по смыслу",outro_toggle:"🏁 Титры в конце серии",outro_ph:"КОНЕЦ",out_end:"КОНЕЦ",out_cta:"Подпишись! 🔔",batch_btn:"📦 Собрать все серии",batch_status:"Собираю серию",batch_done:"серий собрано",batch_empty:"Сначала сгенерируй кадры хотя бы в одной серии",trans_label:"Переход",tr_fade:"Плавно",tr_slide:"Сдвиг",tr_zoom:"Зум",cap_label:"Стиль реплик",cap_sub:"Субтитры",cap_bub:"Облачко",thumb_btn:"🖼 Обложка",thumb_done:"Обложка скачана",multi_btn:"🌍 Собрать на 4 языках",multi_status:"Язык",multi_done:"версий собрано",translating:"Перевожу…",guide_btn:"❓ Гайд",guide_close:"Закрыть",tg_label:"Твой Telegram-постер (Railway)",tg_btn:"📢 Отправить в Telegram-канал",tg_need:"Впиши адрес своего постера",tg_send:"Отправляю…",tg_done:"Опубликовано в канале ✅",tg_fail:"Не отправилось:",consist_toggle:"🧬 Стабильный герой (одно лицо во всех кадрах)",heroref_btn:"🧬 Создать эталон героя",heroref_making:"Создаю эталон героя…",heroref_done:"Эталон готов — теперь кадры будут с этим героем",heroref_need:"Сначала опиши главного героя выше",consist_slow:"Стабильный режим медленнее (референс на каждый кадр)",herophoto_btn:"📷 Эталон из своего фото",backend_label:"Сервер генерации (необязательно: ускоряет + своё фото)",photo_need_backend:"Для фото укажи сервер генерации ниже",photo_uploading:"Загружаю фото…",photo_done:"Фото-эталон загружен — кадры будут по нему",genall_btn:"🎨 Кадры для всех серий",genall_status:"Серия",genall_done:"Кадры готовы во всех сериях",voice_def:"Общий",scv_label:"Голос сцены",gen_stop:"⏹ Стоп",music_own:"🎵 Своя музыка",music_loaded:"Своя музыка загружена",leave_warn:"Есть несохранённые изменения. Уйти?",gen_fail:"Сервис картинок не ответил — подожди и нажми «Сгенерировать кадры» ещё раз",vid_btn:"🎬 Собрать живое видео",vid_making:"Оживляю сцену",vid_need_backend:"Укажи «Сервер генерации» (с ключом) в карточке Стиль и герой",vid_fail:"Видео не получилось — проверь ключ и Pollen на сервере",vid_note:"Каждая сцена станет движущимся клипом (нужен сервер с ключом Pollinations). Долго и тратит Pollen.",vid_assembling:"Собираю видео…"},
+ kk:{badge:"тегін · кілтсіз",idea_title:"💡 Мультфильм идеясы",
+   idea_ph:"Мыс.: кішкентай мысық-ғарышкер балмұздақ планетасын тауып, ғаламшарлық досын табады",
+   scenes_count:"Сахна саны",auto_btn:"✨ Сахна ойлап табу",style_title:"🎨 Стиль және кейіпкер",style_label:"Сурет стилі",
+   st_anime:"Аниме",st_disney:"Дисней",st_comic:"Комикс",st_clay:"Пластилин",st_water:"Акварель",st_flat:"Флэт",
+   hero_label:"Басты кейіпкер (барлық сахнада бірдей болуы үшін)",hero_ph:"Мыс.: көк дулығалы ақ скафандрдағы қызыл мысық",
+   title_label:"Атауы (мультфильм аты)",title_ph:"Мыс.: ҒАРЫШ МЫСЫҚ",scenes_title:"🎞 Сахналар",add_scene:"+ Сахна қосу",
+   gen_btn:"🎨 Кадрларды жасау",film_title:"🎬 Мультфильм",format_label:"Формат",dur_label:"Әр сахнаға секунд",
+   music_label:"Музыка",none:"Жоқ",m_fun:"Көңілді",m_cinema:"Кино",voice_label:"Дауыстау (репликаларды оқиды)",
+   voice_off:"Өшір",voice_f:"Әйел",voice_m:"Ер",voice_soft:"Жұмсақ",preview:"▶ Алдын ала",export:"⬇ Мультфильм жинау",
+   stage_empty:"Кадрларды жаса — осында алдын ала көрінеді",mp4_title:"🎞 MP4-ке экспорт (міндетті емес)",
+   mp4_label:"MP4-серверіңнің мекенжайы (Railway)",mp4_chk:"Бірден MP4-ке жинау",
+   hint:"Бәрі тегін: кадрларды Pollinations салады, мультфильм браузерде жиналады (.webm), дауыстау — тегін TTS.",
+   sc_prompt:"Сахнада не болады",sc_caption:"Реплика / жазу",sec:"с",
+   st_gen:"Кадр саламын",st_of:"/",st_done:"Дайын! Кадрлар салынды.",st_voice:"Сахнаны дауыстаймын",st_think:"Ойлануда…",
+   need_idea:"Алдымен идеяны жаз",need_scene:"Кемінде бір сахна қос",done_scenes:"сахна дайын. «Кадрларды жасау» бас.",
+   mp4fail:"MP4-сервер қолжетімсіз — .webm сақталды",voicefail:"Дауыстау қолжетімсіз — онсыз жиналды",
+   narr_label:"Кадр сыртындағы баяншы (бүкіл мультфильмге бір дауыс)",narr_ph:"Мыс.: Алыс планетада кішкентай ғарыш мысығы өмір сүріпті…",
+   pub_title:"🚀 Жариялау",meta_label:"Тақырып / сипаттама / хэштегтер",meta_gen:"✨ Жасау",
+   meta_title_ph:"Видео тақырыбы",meta_desc_ph:"YouTube/TikTok сипаттамасы",meta_tags_ph:"#хэштегтер бос орынмен",
+   share_btn:"📤 Бөлісу",copy_btn:"📋 Сипаттаманы көшіру",proj_title:"💾 Жоба",proj_save:"💾 Сақтау",proj_load:"📂 Ашу",
+   st_narr:"Баяншыны дауыстаймын…",share_fallback:"Файл жүктелді — қолмен жүкте",
+   yt_hint:"Файл жүктелді, сипаттама көшірілді — видеоны YouTube қойындысына сүйре",
+   tt_hint:"Файл жүктелді, сипаттама көшірілді — видеоны TikTok қойындысына сүйре",
+   copied:"Сипаттама көшірілді",saved:"Жоба сақталды",loaded:"Жоба жүктелді",meta_done:"Дайын: тақырып пен хэштегтер",building:"Видео жинаймын…",tpl_title:"🎁 Үлгілер",series_label:"Сериал атауы (барлық бөлімге ортақ)",series_ph:"Мыс.: ҒАРЫШ МЫСЫҚ",ep_title:"📺 Бөлімдер",ep_word:"Бөлім",ep_add:"＋ Бөлім",ep_del:"🗑 Бөлімді жою",tpl_ok:"Үлгі жүктелді — «Кадрларды жасау» бас",ep_min:"Кемінде бір бөлім керек",sfx_toggle:"🎉 Ауысу дыбыстары",sfx_label:"Сахна дыбысы",eps_count:"Неше бөлім",series_all:"✨ Бүкіл сериал",intro_card:"🎬 Сериал заставкасы",jingle_label:"Интро-джингл",j_fanfare:"Фанфар",j_magic:"Сиқыр",j_playful:"Ойнақы",intro_art_label:"Фирмалық заставка-сурет (барлық бөлімге ортақ)",intro_gen:"🎨 Заставка жасау",intro_clear:"✕",autosfx:"🔊 Мағынаға қарай дыбыс",intro_done:"Заставка дайын!",series_done:"бөлім ойлап табылды — ашып кадр жаса",sfx_done:"Дыбыстар мағынаға қарай таңдалды",outro_toggle:"🏁 Соңында титрлер",outro_ph:"СОҢЫ",out_end:"СОҢЫ",out_cta:"Жазыл! 🔔",batch_btn:"📦 Барлық бөлімді жинау",batch_status:"Бөлім жинаймын",batch_done:"бөлім жиналды",batch_empty:"Алдымен кемінде бір бөлімде кадр жаса",trans_label:"Ауысу",tr_fade:"Жұмсақ",tr_slide:"Жылжу",tr_zoom:"Зум",cap_label:"Реплика стилі",cap_sub:"Субтитр",cap_bub:"Көпіршік",thumb_btn:"🖼 Мұқаба",thumb_done:"Мұқаба жүктелді",multi_btn:"🌍 4 тілде жинау",multi_status:"Тіл",multi_done:"нұсқа жиналды",translating:"Аударып жатырмын…",guide_btn:"❓ Нұсқаулық",guide_close:"Жабу",tg_label:"Сенің Telegram-постерің (Railway)",tg_btn:"📢 Telegram-каналға жіберу",tg_need:"Постер мекенжайын жаз",tg_send:"Жіберіп жатырмын…",tg_done:"Каналға жарияланды ✅",tg_fail:"Жіберілмеді:",consist_toggle:"🧬 Тұрақты кейіпкер (барлық кадрда бір бет)",heroref_btn:"🧬 Кейіпкер эталонын жасау",heroref_making:"Эталон жасап жатырмын…",heroref_done:"Эталон дайын — кадрлар осы кейіпкермен болады",heroref_need:"Алдымен жоғарыда басты кейіпкерді сипатта",consist_slow:"Тұрақты режим баяуырақ (әр кадрға референс)",herophoto_btn:"📷 Өз фотоңнан эталон",backend_label:"Генерация сервері (міндетті емес: жылдамдатады + өз фото)",photo_need_backend:"Фото үшін төменде сервер мекенжайын жаз",photo_uploading:"Фото жүктелуде…",photo_done:"Фото-эталон жүктелді — кадрлар сол бойынша",genall_btn:"🎨 Барлық бөлімге кадр",genall_status:"Бөлім",genall_done:"Барлық бөлімде кадрлар дайын",voice_def:"Ортақ",scv_label:"Сахна дауысы",gen_stop:"⏹ Тоқтату",music_own:"🎵 Өз әнім",music_loaded:"Өз музыкаң жүктелді",leave_warn:"Сақталмаған өзгерістер бар. Шығасың ба?",gen_fail:"Сурет сервисі жауап бермеді — сәл күтіп, «Кадрларды жасау» қайта бас",vid_btn:"🎬 Тірі видео жинау",vid_making:"Сахнаны жандандырамын",vid_need_backend:"«Генерация сервері» (кілтпен) көрсет",vid_fail:"Видео шықпады — кілт пен Pollen тексер",vid_note:"Әр сахна қозғалатын клипке айналады (кілтпен сервер керек). Ұзақ әрі Pollen жұмсайды.",vid_assembling:"Видео жинаймын…"},
+ tr:{badge:"ücretsiz · anahtarsız",idea_title:"💡 Çizgi film fikri",
+   idea_ph:"Örn.: küçük astronot kedi dondurmadan bir gezegen bulur ve uzaylı bir arkadaş edinir",
+   scenes_count:"Sahne sayısı",auto_btn:"✨ Sahne öner",style_title:"🎨 Stil ve kahraman",style_label:"Çizim stili",
+   st_anime:"Anime",st_disney:"Disney",st_comic:"Çizgi roman",st_clay:"Hamur",st_water:"Suluboya",st_flat:"Flat",
+   hero_label:"Ana kahraman (tüm sahnelerde aynı kalsın)",hero_ph:"Örn.: mavi kasklı beyaz uzay giysili turuncu kedi",
+   title_label:"Başlık (çizgi film adı)",title_ph:"Örn.: UZAY KEDİSİ",scenes_title:"🎞 Sahneler",add_scene:"+ Sahne ekle",
+   gen_btn:"🎨 Kareleri oluştur",film_title:"🎬 Çizgi film",format_label:"Format",dur_label:"Sahne başına saniye",
+   music_label:"Müzik",none:"Yok",m_fun:"Neşeli",m_cinema:"Sinema",voice_label:"Seslendirme (replikleri okur)",
+   voice_off:"Kapalı",voice_f:"Kadın",voice_m:"Erkek",voice_soft:"Yumuşak",preview:"▶ Önizleme",export:"⬇ Çizgi filmi oluştur",
+   stage_empty:"Kareleri oluştur — önizleme burada görünür",mp4_title:"🎞 MP4 dışa aktarma (isteğe bağlı)",
+   mp4_label:"MP4 sunucu adresin (Railway)",mp4_chk:"Doğrudan MP4 oluştur",
+   hint:"Her şey ücretsiz: kareleri Pollinations çizer, film tarayıcıda oluşur (.webm), seslendirme ücretsiz TTS.",
+   sc_prompt:"Sahnede ne oluyor",sc_caption:"Replik / altyazı",sec:"sn",
+   st_gen:"Kare çiziyorum",st_of:"/",st_done:"Hazır! Kareler çizildi.",st_voice:"Sahneyi seslendiriyorum",st_think:"Düşünüyorum…",
+   need_idea:"Önce fikri yaz",need_scene:"En az bir sahne ekle",done_scenes:"sahne hazır. «Kareleri oluştur»a bas.",
+   mp4fail:"MP4 sunucusu yok — .webm kaydedildi",voicefail:"Seslendirme yok — onsuz oluşturuldu",
+   narr_label:"Dış ses anlatıcı (tüm film için tek ses)",narr_ph:"Örn.: Uzak bir gezegende küçük bir uzay kedisi yaşarmış…",
+   pub_title:"🚀 Yayınla",meta_label:"Başlık / açıklama / etiketler",meta_gen:"✨ Oluştur",
+   meta_title_ph:"Video başlığı",meta_desc_ph:"YouTube/TikTok açıklaması",meta_tags_ph:"#etiketler boşlukla",
+   share_btn:"📤 Paylaş",copy_btn:"📋 Açıklamayı kopyala",proj_title:"💾 Proje",proj_save:"💾 Kaydet",proj_load:"📂 Aç",
+   st_narr:"Anlatıcıyı seslendiriyorum…",share_fallback:"Dosya indirildi — elle yükle",
+   yt_hint:"Dosya indirildi, açıklama kopyalandı — videoyu YouTube sekmesine sürükle",
+   tt_hint:"Dosya indirildi, açıklama kopyalandı — videoyu TikTok sekmesine sürükle",
+   copied:"Açıklama kopyalandı",saved:"Proje kaydedildi",loaded:"Proje yüklendi",meta_done:"Hazır: başlık ve etiketler",building:"Video oluşturuluyor…",tpl_title:"🎁 Şablonlar",series_label:"Dizi adı (tüm bölümler için ortak)",series_ph:"Örn.: UZAY KEDİSİ",ep_title:"📺 Bölümler",ep_word:"Bölüm",ep_add:"＋ Bölüm",ep_del:"🗑 Bölümü sil",tpl_ok:"Şablon yüklendi — «Kareleri oluştur»a bas",ep_min:"En az bir bölüm gerekli",sfx_toggle:"🎉 Geçiş sesleri",sfx_label:"Sahne sesi",eps_count:"Kaç bölüm",series_all:"✨ Tüm dizi",intro_card:"🎬 Dizi jeneriği",jingle_label:"Jenerik müziği",j_fanfare:"Fanfar",j_magic:"Sihir",j_playful:"Oyuncu",intro_art_label:"Marka jenerik görseli (tüm bölümler için ortak)",intro_gen:"🎨 Jenerik oluştur",intro_clear:"✕",autosfx:"🔊 Anlama göre ses",intro_done:"Jenerik hazır!",series_done:"bölüm oluşturuldu — açıp kare üret",sfx_done:"Sesler anlama göre seçildi",outro_toggle:"🏁 Bölüm sonu jeneriği",outro_ph:"SON",out_end:"SON",out_cta:"Abone ol! 🔔",batch_btn:"📦 Tüm bölümleri oluştur",batch_status:"Bölüm oluşturuluyor",batch_done:"bölüm oluşturuldu",batch_empty:"Önce en az bir bölümde kare üret",trans_label:"Geçiş",tr_fade:"Yumuşak",tr_slide:"Kaydır",tr_zoom:"Zoom",cap_label:"Replik stili",cap_sub:"Altyazı",cap_bub:"Balon",thumb_btn:"🖼 Kapak",thumb_done:"Kapak indirildi",multi_btn:"🌍 4 dilde oluştur",multi_status:"Dil",multi_done:"sürüm oluşturuldu",translating:"Çeviriyorum…",guide_btn:"❓ Rehber",guide_close:"Kapat",tg_label:"Telegram posterin (Railway)",tg_btn:"📢 Telegram kanalına gönder",tg_need:"Poster adresini gir",tg_send:"Gönderiliyor…",tg_done:"Kanala gönderildi ✅",tg_fail:"Gönderilemedi:",consist_toggle:"🧬 Tutarlı kahraman (tüm karelerde aynı yüz)",heroref_btn:"🧬 Kahraman referansı oluştur",heroref_making:"Referans oluşturuluyor…",heroref_done:"Referans hazır — kareler bu kahramanla olacak",heroref_need:"Önce yukarıda ana kahramanı yaz",consist_slow:"Tutarlı mod daha yavaş (her kareye referans)",herophoto_btn:"📷 Kendi fotoğrafından referans",backend_label:"Üretim sunucusu (isteğe bağlı: hızlandırır + kendi foto)",photo_need_backend:"Fotoğraf için aşağıya sunucu adresi gir",photo_uploading:"Fotoğraf yükleniyor…",photo_done:"Foto referans yüklendi — kareler buna göre",genall_btn:"🎨 Tüm bölümlere kare",genall_status:"Bölüm",genall_done:"Tüm bölümlerde kareler hazır",voice_def:"Ortak",scv_label:"Sahne sesi",gen_stop:"⏹ Durdur",music_own:"🎵 Kendi müziğim",music_loaded:"Kendi müziğin yüklendi",leave_warn:"Kaydedilmemiş değişiklikler var. Çıkılsın mı?",gen_fail:"Görsel servisi yanıt vermedi — bekleyip «Kareleri oluştur»a tekrar bas",vid_btn:"🎬 Canlı video oluştur",vid_making:"Sahne canlandırılıyor",vid_need_backend:"«Üretim sunucusu» (anahtarlı) gir",vid_fail:"Video olmadı — anahtar ve Pollen kontrol et",vid_note:"Her sahne hareketli klibe dönüşür (anahtarlı sunucu gerekir). Uzun sürer, Pollen harcar.",vid_assembling:"Video birleştiriliyor…"},
+ en:{badge:"free · no keys",idea_title:"💡 Cartoon idea",
+   idea_ph:"E.g.: a little astronaut cat finds an ice-cream planet and makes an alien friend",
+   scenes_count:"Scenes",auto_btn:"✨ Suggest scenes",style_title:"🎨 Style & hero",style_label:"Art style",
+   st_anime:"Anime",st_disney:"Disney",st_comic:"Comic",st_clay:"Claymation",st_water:"Watercolor",st_flat:"Flat",
+   hero_label:"Main hero (kept consistent across scenes)",hero_ph:"E.g.: a ginger kitten in a white spacesuit with a blue helmet",
+   title_label:"Title (movie name)",title_ph:"E.g.: SPACE CAT",scenes_title:"🎞 Scenes",add_scene:"+ Add scene",
+   gen_btn:"🎨 Generate frames",film_title:"🎬 Cartoon",format_label:"Format",dur_label:"Seconds per scene",
+   music_label:"Music",none:"None",m_fun:"Fun",m_cinema:"Cinema",voice_label:"Voiceover (reads the lines)",
+   voice_off:"Off",voice_f:"Female",voice_m:"Male",voice_soft:"Soft",preview:"▶ Preview",export:"⬇ Build cartoon",
+   stage_empty:"Generate frames — preview appears here",mp4_title:"🎞 Export to MP4 (optional)",
+   mp4_label:"Your mp4 server URL (Railway)",mp4_chk:"Build straight to MP4",
+   hint:"All free: Pollinations draws the frames, the cartoon is built in the browser (.webm), voiceover via free TTS.",
+   sc_prompt:"What happens in the scene",sc_caption:"Line / caption",sec:"s",
+   st_gen:"Drawing frame",st_of:"of",st_done:"Done! Frames are ready.",st_voice:"Voicing scene",st_think:"Thinking…",
+   need_idea:"Describe your idea first",need_scene:"Add at least one scene",done_scenes:"scenes ready. Hit “Generate frames”.",
+   mp4fail:"MP4 server unavailable — saved .webm",voicefail:"Voiceover unavailable — built without it",
+   narr_label:"Narrator voiceover (one voice for the whole film)",narr_ph:"E.g.: Once upon a time on a faraway planet lived a little space cat…",
+   pub_title:"🚀 Publish",meta_label:"Title / description / hashtags",meta_gen:"✨ Generate",
+   meta_title_ph:"Video title",meta_desc_ph:"Description for YouTube/TikTok",meta_tags_ph:"#hashtags separated by space",
+   share_btn:"📤 Share",copy_btn:"📋 Copy description",proj_title:"💾 Project",proj_save:"💾 Save",proj_load:"📂 Open",
+   st_narr:"Voicing the narrator…",share_fallback:"File downloaded — upload it manually",
+   yt_hint:"File downloaded, description copied — drag the video into the YouTube tab",
+   tt_hint:"File downloaded, description copied — drag the video into the TikTok tab",
+   copied:"Description copied",saved:"Project saved",loaded:"Project loaded",meta_done:"Ready: title and hashtags",building:"Building video…",tpl_title:"🎁 Templates",series_label:"Series name (shared by all episodes)",series_ph:"E.g.: SPACE CAT",ep_title:"📺 Episodes",ep_word:"Episode",ep_add:"＋ Episode",ep_del:"🗑 Delete episode",tpl_ok:"Template loaded — hit “Generate frames”",ep_min:"At least one episode required",sfx_toggle:"🎉 Cartoon transition sounds",sfx_label:"Scene sound",eps_count:"Episodes",series_all:"✨ Whole series",intro_card:"🎬 Series intro",jingle_label:"Intro jingle",j_fanfare:"Fanfare",j_magic:"Magic",j_playful:"Playful",intro_art_label:"Branded intro art (shared by all episodes)",intro_gen:"🎨 Generate intro art",intro_clear:"✕",autosfx:"🔊 Auto sound by meaning",intro_done:"Intro ready!",series_done:"episodes created — open and generate frames",sfx_done:"Sounds matched by meaning",outro_toggle:"🏁 End credits per episode",outro_ph:"THE END",out_end:"THE END",out_cta:"Subscribe! 🔔",batch_btn:"📦 Build all episodes",batch_status:"Building episode",batch_done:"episodes built",batch_empty:"Generate frames in at least one episode first",trans_label:"Transition",tr_fade:"Fade",tr_slide:"Slide",tr_zoom:"Zoom",cap_label:"Caption style",cap_sub:"Subtitle",cap_bub:"Bubble",thumb_btn:"🖼 Thumbnail",thumb_done:"Thumbnail saved",multi_btn:"🌍 Build in 4 languages",multi_status:"Language",multi_done:"versions built",translating:"Translating…",guide_btn:"❓ Guide",guide_close:"Close",tg_label:"Your Telegram poster (Railway)",tg_btn:"📢 Send to Telegram channel",tg_need:"Enter your poster URL",tg_send:"Sending…",tg_done:"Posted to channel ✅",tg_fail:"Failed:",consist_toggle:"🧬 Consistent hero (same face across frames)",heroref_btn:"🧬 Generate hero reference",heroref_making:"Making hero reference…",heroref_done:"Reference ready — frames will use this hero",heroref_need:"Describe the main hero above first",consist_slow:"Consistent mode is slower (reference per frame)",herophoto_btn:"📷 Reference from your photo",backend_label:"Generation server (optional: faster + your photo)",photo_need_backend:"For a photo, set the generation server below",photo_uploading:"Uploading photo…",photo_done:"Photo reference uploaded — frames will use it",genall_btn:"🎨 Frames for all episodes",genall_status:"Episode",genall_done:"Frames ready in all episodes",voice_def:"Shared",scv_label:"Scene voice",gen_stop:"⏹ Stop",music_own:"🎵 My music",music_loaded:"Your music loaded",leave_warn:"You have unsaved changes. Leave?",gen_fail:"Image service did not respond — wait and press Generate frames again",vid_btn:"🎬 Build live video",vid_making:"Animating scene",vid_need_backend:"Set the «Generation server» (with key) in Style & hero",vid_fail:"Video failed — check key and Pollen on the server",vid_note:"Each scene becomes a moving clip (needs server with a Pollinations key). Slow and uses Pollen.",vid_assembling:"Assembling video…"}
+};
+const LANGNAME={ru:'русском',kk:'казахском',tr:'турецком',en:'английском'};
+let L='ru';
+function t(k){ return (T[L]&&T[L][k])||T.ru[k]||k; }
+function applyLang(){
+  document.documentElement.lang=L;
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>el.placeholder=t(el.dataset.i18nPh));
+  $('#durV').textContent=state.dur.toFixed(1).replace('.0','')+t('sec');
+  renderScenes(); if($('#tplChips')) renderTemplates(); if($('#epBar')) renderEpBar();
+}
+
+const STYLES={
+  pixar:'3D Pixar-style animated movie still, cute expressive character, soft cinematic lighting, vibrant colors, highly detailed',
+  anime:'2D anime style, cel shading, expressive big eyes, detailed anime background, studio ghibli vibes',
+  disney:'classic Disney hand-drawn cartoon, warm storybook colors, charming character design',
+  comic:'comic book illustration, bold ink outlines, halftone shading, dynamic composition',
+  clay:'claymation stop-motion style, plasticine characters, tactile clay textures, soft studio light',
+  water:'soft watercolor storybook illustration, pastel palette, gentle edges, children book art',
+  flat:'flat vector cartoon illustration, simple bold shapes, bright flat colors, minimal'
+};
+const state={ style:'pixar', hero:'', title:'', narrator:'', seriesTitle:'', W:1280,H:720, dur:3, music:'chill',
+  voice:false, voiceName:'nova', sfx:true, jingle:'magic', introImg:null, introImgUrl:null, outro:{on:true,text:''},
+  capStyle:'subtitle', transType:'fade', consistency:false, heroRefUrl:null, heroRefImg:null, heroRefType:null,
+  customMusic:null, customMusicName:'', baseSeed:Math.floor(Math.random()*1e6),
+  episodes:[{title:'',narrator:'',scenes:[]}], ep:0, scenes:[],
+  lastWebm:null, lastMp4:null };
+state.scenes=state.episodes[0].scenes;
+let dirty=false;
+function invalidate(){ state.lastWebm=null; state.lastMp4=null; dirty=true; }
+
+/* ===== series (episodes) ===== */
+function loadEp(i){
+  if(i<0||i>=state.episodes.length) return;
+  state.ep=i; const e=state.episodes[i];
+  state.scenes=e.scenes; state.title=e.title; state.narrator=e.narrator;
+  const tEl=$('#title'), nEl=$('#narrator'); if(tEl) tEl.value=e.title; if(nEl) nEl.value=e.narrator;
+  invalidate(); renderScenes(); renderEpBar(); refreshStage(); renderIdle();
+}
+function addEpisode(){ state.episodes.push({title:'',narrator:'',scenes:[]}); loadEp(state.episodes.length-1); }
+function delEpisode(){
+  if(state.episodes.length<=1){ state.episodes[0]={title:'',narrator:'',scenes:[]}; state.ep=0; }
+  else { state.episodes.splice(state.ep,1); state.ep=Math.max(0,Math.min(state.ep,state.episodes.length-1)); }
+  loadEp(state.ep);
+}
+function renderEpBar(){
+  const bar=$('#epBar'); if(!bar) return; bar.innerHTML='';
+  state.episodes.forEach((e,i)=>{
+    const b=document.createElement('button'); if(i===state.ep) b.classList.add('on');
+    b.textContent=t('ep_word')+' '+(i+1); b.onclick=()=>loadEp(i); bar.appendChild(b);
+  });
+  const add=document.createElement('button'); add.textContent=t('ep_add'); add.onclick=addEpisode; bar.appendChild(add);
+  if(state.episodes.length>1){ const del=document.createElement('button'); del.textContent=t('ep_del'); del.style.borderColor='var(--coral)'; del.style.color='var(--coral)'; del.onclick=delEpisode; bar.appendChild(del); }
+}
+
+/* ===== templates ===== */
+function L4(o){ return (o&&(o[L]||o.en))||''; }
+const TEMPLATES=[
+ {id:'cosmocat',emoji:'🐱',name:{ru:'Космо-кот',kk:'Ғарыш мысық',tr:'Uzay kedisi',en:'Space Cat'},style:'pixar',ratio:'16:9',music:'chill',dur:3,
+  hero:'a ginger kitten astronaut in a white spacesuit with a blue glass helmet',title:{ru:'КОСМО-КОТ',kk:'ҒАРЫШ МЫСЫҚ',tr:'UZAY KEDİSİ',en:'SPACE CAT'},
+  scenes:[
+   {prompt:'a tiny rocket launches from a green planet into starry space',cap:{ru:'Полетели к звёздам!',kk:'Жұлдыздарға ұштық!',tr:'Yıldızlara gidiyoruz!',en:'Off to the stars!'}},
+   {prompt:'the astronaut kitten floats near a giant ice-cream planet',cap:{ru:'Планета из мороженого!',kk:'Балмұздақ планета!',tr:'Dondurma gezegeni!',en:'An ice-cream planet!'}},
+   {prompt:'the kitten meets a friendly little green alien, both smiling',cap:{ru:'Привет, новый друг!',kk:'Сәлем, жаңа дос!',tr:'Merhaba yeni dost!',en:'Hi, new friend!'}},
+   {prompt:'the kitten and alien wave goodbye as the rocket flies home',cap:{ru:'До новых встреч!',kk:'Кездескенше!',tr:'Görüşürüz!',en:'See you soon!'}}]},
+ {id:'dragon',emoji:'🐉',name:{ru:'Дракончик',kk:'Айдаһаршық',tr:'Küçük ejderha',en:'Little Dragon'},style:'disney',ratio:'16:9',music:'cinematic',dur:3,
+  hero:'a small cute purple baby dragon with tiny wings and big eyes',title:{ru:'ДРАКОНЧИК',kk:'АЙДАҺАРШЫҚ',tr:'KÜÇÜK EJDERHA',en:'LITTLE DRAGON'},
+  scenes:[
+   {prompt:'a baby dragon hatches from an egg in a misty green valley',cap:{ru:'Я вылупился!',kk:'Мен жарылдым!',tr:'Yumurtadan çıktım!',en:'I hatched!'}},
+   {prompt:'the baby dragon tries to breathe fire but only puffs smoke',cap:{ru:'Ой, только дым…',kk:'Ой, тек түтін…',tr:'Ah, sadece duman…',en:'Oops, just smoke…'}},
+   {prompt:'the dragon flaps its wings and lifts off above the trees',cap:{ru:'Я лечу!',kk:'Мен ұшып барамын!',tr:'Uçuyorum!',en:'I can fly!'}},
+   {prompt:'the dragon breathes a big warm fire over the sunset valley',cap:{ru:'Получилось!',kk:'Болды!',tr:'Başardım!',en:'I did it!'}}]},
+ {id:'ocean',emoji:'🐠',name:{ru:'Подводный мир',kk:'Су асты әлемі',tr:'Su altı dünyası',en:'Ocean World'},style:'pixar',ratio:'9:16',music:'chill',dur:3,
+  hero:'a cheerful little clownfish with big curious eyes',title:{ru:'ПОДВОДНЫЙ МИР',kk:'СУ АСТЫ ӘЛЕМІ',tr:'SU ALTI DÜNYASI',en:'OCEAN WORLD'},
+  scenes:[
+   {prompt:'a little clownfish swims through a colorful coral reef',cap:{ru:'Какой красивый риф!',kk:'Тамаша риф!',tr:'Ne güzel resif!',en:'What a reef!'}},
+   {prompt:'the fish hides from a big shadow behind the coral',cap:{ru:'Кто это там?',kk:'Ол кім екен?',tr:'Bu da kim?',en:'Who is that?'}},
+   {prompt:'a friendly sea turtle smiles at the little fish',cap:{ru:'Черепаха-друг!',kk:'Тасбақа-дос!',tr:'Kaplumbağa dost!',en:'A turtle friend!'}},
+   {prompt:'fish and turtle swim together toward the sunlight surface',cap:{ru:'Плывём вместе!',kk:'Бірге жүзейік!',tr:'Birlikte yüzelim!',en:'Swim together!'}}]},
+ {id:'hero',emoji:'🦸',name:{ru:'Супер-малыш',kk:'Супер-бала',tr:'Süper bebek',en:'Super Kid'},style:'comic',ratio:'9:16',music:'energetic',dur:2.5,
+  hero:'a brave little kid superhero in a red cape and blue mask',title:{ru:'СУПЕР-МАЛЫШ',kk:'СУПЕР-БАЛА',tr:'SÜPER BEBEK',en:'SUPER KID'},
+  scenes:[
+   {prompt:'a little kid puts on a red cape in front of a mirror, comic style',cap:{ru:'Я готов!',kk:'Мен дайынмын!',tr:'Hazırım!',en:"I'm ready!"}},
+   {prompt:'the kid hero jumps between city rooftops, dynamic comic panel',cap:{ru:'В путь!',kk:'Кеттік!',tr:'Hadi!',en:"Let's go!"}},
+   {prompt:'the hero rescues a kitten from a tall tree, comic action',cap:{ru:'Спасён!',kk:'Құтқарылды!',tr:'Kurtuldu!',en:'Rescued!'}},
+   {prompt:'the little hero poses proudly as the city cheers, comic style',cap:{ru:'Ура, герой!',kk:'Жасасын, батыр!',tr:'Yaşasın kahraman!',en:'Hooray, hero!'}}]},
+ {id:'forest',emoji:'🍄',name:{ru:'Волшебный лес',kk:'Сиқырлы орман',tr:'Sihirli orman',en:'Magic Forest'},style:'water',ratio:'16:9',music:'lofi',dur:3.5,
+  hero:'a tiny curious fox cub with a glowing lantern',title:{ru:'ВОЛШЕБНЫЙ ЛЕС',kk:'СИҚЫРЛЫ ОРМАН',tr:'SİHİRLİ ORMAN',en:'MAGIC FOREST'},
+  scenes:[
+   {prompt:'a little fox cub with a lantern enters a glowing magic forest, watercolor',cap:{ru:'Как светло…',kk:'Қандай жарық…',tr:'Ne kadar parlak…',en:'So bright…'}},
+   {prompt:'glowing mushrooms and fireflies surround the fox, watercolor',cap:{ru:'Волшебные грибы!',kk:'Сиқырлы саңырауқұлақтар!',tr:'Sihirli mantarlar!',en:'Magic mushrooms!'}},
+   {prompt:'the fox meets a wise glowing owl on a branch, watercolor',cap:{ru:'Мудрая сова.',kk:'Дана үкі.',tr:'Bilge baykuş.',en:'A wise owl.'}},
+   {prompt:'the fox finds a hidden waterfall of stars, watercolor',cap:{ru:'Звёздный водопад!',kk:'Жұлдызды сарқырама!',tr:'Yıldız şelalesi!',en:'A star waterfall!'}}]},
+ {id:'robot',emoji:'🤖',name:{ru:'Робот и мальчик',kk:'Робот пен бала',tr:'Robot ve çocuk',en:'Robot & Boy'},style:'pixar',ratio:'16:9',music:'chill',dur:3,
+  hero:'a small friendly round white robot with glowing blue eyes',title:{ru:'РОБОТ И ДРУГ',kk:'РОБОТ ЖӘНЕ ДОС',tr:'ROBOT VE DOST',en:'ROBOT & FRIEND'},
+  scenes:[
+   {prompt:'a boy finds a small broken robot in a garage, warm light',cap:{ru:'Ты живой?',kk:'Сен тірісің бе?',tr:'Yaşıyor musun?',en:'Are you alive?'}},
+   {prompt:'the boy fixes the robot, its eyes light up blue',cap:{ru:'Он включился!',kk:'Ол қосылды!',tr:'Çalıştı!',en:'It works!'}},
+   {prompt:'robot and boy play together in a sunny backyard',cap:{ru:'Лучшие друзья!',kk:'Ең жақсы достар!',tr:'En iyi dostlar!',en:'Best friends!'}},
+   {prompt:'robot and boy watch the sunset together on a hill',cap:{ru:'Спасибо, друг.',kk:'Рахмет, дос.',tr:'Teşekkürler dostum.',en:'Thanks, friend.'}}]},
+ {id:'panda',emoji:'🐼',name:{ru:'Кунг-фу панда',kk:'Кунг-фу панда',tr:'Kung-fu panda',en:'Kung-fu Panda'},style:'anime',ratio:'16:9',music:'energetic',dur:2.5,
+  hero:'a chubby cute panda in a martial arts headband',title:{ru:'ПАНДА-ВОИН',kk:'ПАНДА-ЖАУЫНГЕР',tr:'PANDA SAVAŞÇI',en:'PANDA WARRIOR'},
+  scenes:[
+   {prompt:'a chubby panda practices kung-fu poses in a bamboo forest, anime',cap:{ru:'Тренировка!',kk:'Жаттығу!',tr:'Antrenman!',en:'Training!'}},
+   {prompt:'the panda trips and falls into bamboo, funny anime',cap:{ru:'Ой-ой!',kk:'Ойбай!',tr:'Eyvah!',en:'Whoops!'}},
+   {prompt:'the panda focuses and does a perfect kick, dynamic anime',cap:{ru:'Идеально!',kk:'Мінсіз!',tr:'Mükemmel!',en:'Perfect!'}},
+   {prompt:'the panda bows respectfully at sunset, anime style',cap:{ru:'Мир и сила.',kk:'Тыныштық пен күш.',tr:'Huzur ve güç.',en:'Peace and power.'}}]},
+ {id:'candy',emoji:'🍭',name:{ru:'Конфетная страна',kk:'Кәмпит елі',tr:'Şeker ülkesi',en:'Candy Land'},style:'clay',ratio:'9:16',music:'chill',dur:3,
+  hero:'a happy little gingerbread character with candy buttons',title:{ru:'КОНФЕТНАЯ СТРАНА',kk:'КӘМПИТ ЕЛІ',tr:'ŞEKER ÜLKESİ',en:'CANDY LAND'},
+  scenes:[
+   {prompt:'a gingerbread character walks through a claymation candy village',cap:{ru:'Сладкий город!',kk:'Тәтті қала!',tr:'Tatlı şehir!',en:'Sweet town!'}},
+   {prompt:'chocolate river and lollipop trees, claymation style',cap:{ru:'Шоколадная река!',kk:'Шоколад өзені!',tr:'Çikolata nehri!',en:'Chocolate river!'}},
+   {prompt:'the character shares candy with clay friends, claymation',cap:{ru:'Поделимся!',kk:'Бөлісейік!',tr:'Paylaşalım!',en:"Let's share!"}},
+   {prompt:'a big candy celebration with fireworks, claymation',cap:{ru:'Праздник!',kk:'Мереке!',tr:'Kutlama!',en:'Party!'}}]},
+ {id:'winter',emoji:'⛄',name:{ru:'Зимняя сказка',kk:'Қысқы ертегі',tr:'Kış masalı',en:'Winter Tale'},style:'disney',ratio:'16:9',music:'cinematic',dur:3.5,
+  hero:'a cheerful little snowman with a red scarf',title:{ru:'ЗИМНЯЯ СКАЗКА',kk:'ҚЫСҚЫ ЕРТЕГІ',tr:'KIŞ MASALI',en:'WINTER TALE'},
+  scenes:[
+   {prompt:'a little snowman wakes up in a snowy village at dawn',cap:{ru:'Доброе утро!',kk:'Қайырлы таң!',tr:'Günaydın!',en:'Good morning!'}},
+   {prompt:'the snowman slides down a snowy hill, joyful',cap:{ru:'Веселье!',kk:'Қызық!',tr:'Ne eğlence!',en:'So much fun!'}},
+   {prompt:'the snowman helps a lost bunny find its home, snowy scene',cap:{ru:'Я помогу!',kk:'Мен көмектесемін!',tr:'Yardım ederim!',en:'I will help!'}},
+   {prompt:'the snowman and animals watch northern lights, magical',cap:{ru:'Северное сияние!',kk:'Солтүстік шұғыла!',tr:'Kuzey ışıkları!',en:'Northern lights!'}}]},
+ {id:'mars',emoji:'🚀',name:{ru:'Полёт на Марс',kk:'Марсқа ұшу',tr:'Mars yolculuğu',en:'Trip to Mars'},style:'pixar',ratio:'16:9',music:'cinematic',dur:3.5,
+  hero:'a brave little astronaut kid in an orange spacesuit',title:{ru:'НА МАРС!',kk:'МАРСҚА!',tr:"MARS'A!",en:'TO MARS!'},
+  scenes:[
+   {prompt:'a rocket blasts off from Earth into space, cinematic',cap:{ru:'Старт!',kk:'Ұшу!',tr:'Kalkış!',en:'Blast off!'}},
+   {prompt:'the astronaut kid floats inside the rocket cabin, weightless',cap:{ru:'Невесомость!',kk:'Салмақсыздық!',tr:'Ağırlıksızlık!',en:'Zero gravity!'}},
+   {prompt:'the rocket lands on the red surface of Mars',cap:{ru:'Мы на Марсе!',kk:"Марстамыз!",tr:"Mars'tayız!",en:'On Mars!'}},
+   {prompt:'the kid plants a flag on Mars under two moons',cap:{ru:'Наш флаг!',kk:'Біздің ту!',tr:'Bayrağımız!',en:'Our flag!'}}]},
+ {id:'dino',emoji:'🦖',name:{ru:'Динозаврик',kk:'Динозавршық',tr:'Küçük dino',en:'Little Dino'},style:'disney',ratio:'16:9',music:'chill',dur:3,
+  hero:'a cute small green baby dinosaur with big friendly eyes',title:{ru:'ДИНОЗАВРИК',kk:'ДИНОЗАВРШЫҚ',tr:'KÜÇÜK DİNO',en:'LITTLE DINO'},
+  scenes:[
+   {prompt:'a baby dinosaur wanders a prehistoric jungle with ferns',cap:{ru:'Где мама?',kk:'Анам қайда?',tr:'Annem nerede?',en:"Where's mom?"}},
+   {prompt:'the dino makes friends with a small flying pterodactyl',cap:{ru:'Новый друг!',kk:'Жаңа дос!',tr:'Yeni dost!',en:'A friend!'}},
+   {prompt:'they cross a river on floating logs, adventure',cap:{ru:'Осторожно!',kk:'Абайла!',tr:'Dikkat!',en:'Careful!'}},
+   {prompt:'the baby dino reunites with its big dinosaur family',cap:{ru:'Нашлись!',kk:'Табылды!',tr:'Bulundu!',en:'Found them!'}}]},
+ {id:'fairy',emoji:'🧚',name:{ru:'Фея цветов',kk:'Гүл перісі',tr:'Çiçek perisi',en:'Flower Fairy'},style:'water',ratio:'9:16',music:'lofi',dur:3.5,
+  hero:'a tiny cute flower fairy with translucent wings and a petal dress',title:{ru:'ФЕЯ ЦВЕТОВ',kk:'ГҮЛ ПЕРІСІ',tr:'ÇİÇEK PERİSİ',en:'FLOWER FAIRY'},
+  scenes:[
+   {prompt:'a tiny fairy wakes up inside a blooming flower at dawn, watercolor',cap:{ru:'Новый день!',kk:'Жаңа күн!',tr:'Yeni gün!',en:'A new day!'}},
+   {prompt:'the fairy sprinkles magic dust and flowers bloom, watercolor',cap:{ru:'Расцветайте!',kk:'Гүлдеңдер!',tr:'Açın!',en:'Bloom!'}},
+   {prompt:'the fairy helps a sad butterfly fly again, watercolor',cap:{ru:'Лети, друг!',kk:'Ұш, дос!',tr:'Uç, dostum!',en:'Fly, friend!'}},
+   {prompt:'the fairy dances with butterflies over a meadow, watercolor',cap:{ru:'Танцуем!',kk:'Билейік!',tr:'Dans edelim!',en:"Let's dance!"}}]},
+ {id:'pirate',emoji:'🏴‍☠️',name:{ru:'Пираты',kk:'Қарақшылар',tr:'Korsanlar',en:'Pirates'},style:'comic',ratio:'16:9',music:'energetic',dur:3,
+  hero:'a funny little pirate kid with a big hat and a toy parrot',title:{ru:'ПИРАТЫ',kk:'ҚАРАҚШЫЛАР',tr:'KORSANLAR',en:'PIRATES'},
+  scenes:[
+   {prompt:'a small pirate ship sails a cartoon ocean, comic style',cap:{ru:'В путь!',kk:'Кеттік!',tr:'Yola!',en:'Set sail!'}},
+   {prompt:'the pirate kid reads a treasure map, comic style',cap:{ru:'Карта клада!',kk:'Қазына картасы!',tr:'Hazine haritası!',en:'Treasure map!'}},
+   {prompt:'they dig on a tropical island and find a chest, comic',cap:{ru:'Нашли сундук!',kk:'Сандық таптық!',tr:'Sandık bulduk!',en:'A chest!'}},
+   {prompt:'the chest opens with glowing gold, celebration, comic',cap:{ru:'Золото!',kk:'Алтын!',tr:'Altın!',en:'Gold!'}}]},
+ {id:'bee',emoji:'🐝',name:{ru:'Пчёлка',kk:'Арашық',tr:'Küçük arı',en:'Little Bee'},style:'pixar',ratio:'9:16',music:'chill',dur:2.5,
+  hero:'a cute fuzzy little bee with big shiny eyes',title:{ru:'ПЧЁЛКА',kk:'АРАШЫҚ',tr:'KÜÇÜK ARI',en:'LITTLE BEE'},
+  scenes:[
+   {prompt:'a little bee flies out of a hive into a sunny garden',cap:{ru:'На работу!',kk:'Жұмысқа!',tr:'İşe!',en:'To work!'}},
+   {prompt:'the bee collects pollen from a bright flower',cap:{ru:'Собираю нектар!',kk:'Шырын жинаймын!',tr:'Nektar topluyorum!',en:'Collecting nectar!'}},
+   {prompt:'the bee flies through rain and shelters under a leaf',cap:{ru:'Спрячусь!',kk:'Тығыламын!',tr:'Saklanayım!',en:"I'll hide!"}},
+   {prompt:'the bee returns to the hive with friends, happy',cap:{ru:'Домой!',kk:'Үйге!',tr:'Eve!',en:'Home!'}}]},
+ {id:'lion',emoji:'🦁',name:{ru:'Львёнок',kk:'Арыстаншық',tr:'Aslan yavrusu',en:'Lion Cub'},style:'disney',ratio:'16:9',music:'cinematic',dur:3.5,
+  hero:'a small brave lion cub with a fuzzy little mane',title:{ru:'ЛЬВЁНОК',kk:'АРЫСТАНШЫҚ',tr:'ASLAN YAVRUSU',en:'LION CUB'},
+  scenes:[
+   {prompt:'a lion cub stands on a rock over the savanna at sunrise',cap:{ru:'Моя саванна!',kk:'Менің даламым!',tr:'Benim savanım!',en:'My savanna!'}},
+   {prompt:'the cub tries to roar but only squeaks, funny',cap:{ru:'Мяу?',kk:'Мияу?',tr:'Miyav?',en:'Meow?'}},
+   {prompt:'the cub practices roaring with animal friends',cap:{ru:'Ещё раз!',kk:'Тағы бір рет!',tr:'Bir daha!',en:'Again!'}},
+   {prompt:'the cub finally roars proudly at golden sunset',cap:{ru:'Р-Р-Р!',kk:'Р-Р-Р!',tr:'R-R-R!',en:'ROAR!'}}]},
+ {id:'unicorn',emoji:'🦄',name:{ru:'Единорог',kk:'Жалғызмүйіз',tr:'Tek boynuz',en:'Unicorn'},style:'water',ratio:'9:16',music:'lofi',dur:3.5,
+  hero:'a cute pastel rainbow unicorn with a sparkly mane',title:{ru:'ЕДИНОРОГ',kk:'ЖАЛҒЫЗМҮЙІЗ',tr:'TEK BOYNUZ',en:'UNICORN'},
+  scenes:[
+   {prompt:'a pastel unicorn gallops across a rainbow sky, watercolor',cap:{ru:'По радуге!',kk:'Кемпірқосақпен!',tr:'Gökkuşağında!',en:'On the rainbow!'}},
+   {prompt:'the unicorn drinks from a sparkling magic pond, watercolor',cap:{ru:'Волшебство!',kk:'Сиқыр!',tr:'Sihir!',en:'Magic!'}},
+   {prompt:'the unicorn meets baby cloud creatures, watercolor',cap:{ru:'Облачные малыши!',kk:'Бұлт бөбектер!',tr:'Bulut bebekler!',en:'Cloud babies!'}},
+   {prompt:'the unicorn shares its glow under starry sky, watercolor',cap:{ru:'Спокойной ночи!',kk:'Қайырлы түн!',tr:'İyi geceler!',en:'Good night!'}}]},
+ {id:'penguin',emoji:'🐧',name:{ru:'Пингвинёнок',kk:'Пингвиншік',tr:'Küçük penguen',en:'Little Penguin'},style:'pixar',ratio:'16:9',music:'chill',dur:3,
+  hero:'a chubby cute baby penguin with rosy cheeks',title:{ru:'ПИНГВИНЁНОК',kk:'ПИНГВИНШІК',tr:'KÜÇÜK PENGUEN',en:'LITTLE PENGUIN'},
+  scenes:[
+   {prompt:'a baby penguin slides on ice for the first time',cap:{ru:'Скользко!',kk:'Тайғақ!',tr:'Kaygan!',en:'Slippery!'}},
+   {prompt:'the penguin tries to jump into cold water, hesitant',cap:{ru:'Прыгну?',kk:'Секірейін бе?',tr:'Atlayayım mı?',en:'Should I jump?'}},
+   {prompt:'the penguin dives and swims fast underwater, joyful',cap:{ru:'Ура, плыву!',kk:'Жүздім!',tr:'Yüzüyorum!',en:'I can swim!'}},
+   {prompt:'the penguin celebrates with its penguin family on ice',cap:{ru:'Мы команда!',kk:'Біз командамыз!',tr:'Biz takımız!',en:"We're a team!"}}]},
+ {id:'wizard',emoji:'🧙',name:{ru:'Юный волшебник',kk:'Жас сиқыршы',tr:'Genç büyücü',en:'Young Wizard'},style:'anime',ratio:'16:9',music:'cinematic',dur:3.5,
+  hero:'a young anime wizard kid with a starry blue robe and a wooden staff',title:{ru:'ВОЛШЕБНИК',kk:'СИҚЫРШЫ',tr:'BÜYÜCÜ',en:'WIZARD'},
+  scenes:[
+   {prompt:'a young wizard opens a glowing spellbook in a tower, anime',cap:{ru:'Первое заклинание!',kk:'Алғашқы сиқыр!',tr:'İlk büyü!',en:'First spell!'}},
+   {prompt:'sparks fly as the spell goes a bit wrong, funny anime',cap:{ru:'Ой-ой!',kk:'Ойбай!',tr:'Eyvah!',en:'Uh oh!'}},
+   {prompt:'the wizard summons a friendly glowing spirit, anime',cap:{ru:'Получилось!',kk:'Болды!',tr:'Oldu!',en:'It worked!'}},
+   {prompt:'the wizard and spirit light up the night sky, anime',cap:{ru:'Магия света!',kk:'Жарық сиқыры!',tr:'Işık büyüsü!',en:'Light magic!'}}]},
+ {id:'race',emoji:'🏎️',name:{ru:'Гонки машинок',kk:'Көлік жарысы',tr:'Araba yarışı',en:'Car Race'},style:'flat',ratio:'16:9',music:'energetic',dur:2.5,
+  hero:'a cute cartoon red race car with big eyes on the windshield',title:{ru:'ГОНКИ',kk:'ЖАРЫС',tr:'YARIŞ',en:'RACE'},
+  scenes:[
+   {prompt:'cartoon race cars line up at a colorful starting line, flat style',cap:{ru:'На старт!',kk:'Бастауға!',tr:'Başla!',en:'Get set!'}},
+   {prompt:'the red car speeds around a loop track, flat style',cap:{ru:'Быстрее!',kk:'Жылдамырақ!',tr:'Daha hızlı!',en:'Faster!'}},
+   {prompt:'the red car overtakes a blue car in a turn, flat style',cap:{ru:'Обгон!',kk:'Басып озу!',tr:'Geçiş!',en:'Overtake!'}},
+   {prompt:'the red car crosses the finish line, confetti, flat style',cap:{ru:'Победа!',kk:'Жеңіс!',tr:'Zafer!',en:'Win!'}}]},
+ {id:'fire',emoji:'🚒',name:{ru:'Пожарная машина',kk:'Өрт сөндіргіш',tr:'İtfaiye',en:'Fire Truck'},style:'flat',ratio:'9:16',music:'energetic',dur:2.5,
+  hero:'a friendly cartoon red fire truck with big eyes',title:{ru:'ПОЖАРНАЯ',kk:'ӨРТ МАШИНАСЫ',tr:'İTFAİYE',en:'FIRE TRUCK'},
+  scenes:[
+   {prompt:'a cute fire truck rushes down a street with lights on, flat',cap:{ru:'Едем на помощь!',kk:'Көмекке!',tr:'Yardıma!',en:'To the rescue!'}},
+   {prompt:'the fire truck raises its ladder to a small house, flat',cap:{ru:'Лестница вверх!',kk:'Саты жоғары!',tr:'Merdiven yukarı!',en:'Ladder up!'}},
+   {prompt:'the truck sprays water and rescues a cat, flat style',cap:{ru:'Кот спасён!',kk:'Мысық аман!',tr:'Kedi kurtuldu!',en:'Cat saved!'}},
+   {prompt:'children cheer for the fire truck hero, flat style',cap:{ru:'Спасибо!',kk:'Рахмет!',tr:'Teşekkürler!',en:'Thank you!'}}]},
+ {id:'bunny',emoji:'🐰',name:{ru:'Зайчик',kk:'Қоянша',tr:'Tavşancık',en:'Bunny'},style:'clay',ratio:'9:16',music:'chill',dur:2.5,
+  hero:'a cute fluffy clay bunny with long ears',title:{ru:'ЗАЙЧИК',kk:'ҚОЯНША',tr:'TAVŞANCIK',en:'BUNNY'},
+  scenes:[
+   {prompt:'a clay bunny hops through a claymation vegetable garden',cap:{ru:'Морковка!',kk:'Сәбіз!',tr:'Havuç!',en:'A carrot!'}},
+   {prompt:'the bunny tries to reach a tall carrot, funny claymation',cap:{ru:'Высоко!',kk:'Биік!',tr:'Yüksek!',en:'Too high!'}},
+   {prompt:'the bunny builds a little tower of boxes, claymation',cap:{ru:'Придумал!',kk:'Таптым!',tr:'Buldum!',en:'Got it!'}},
+   {prompt:'the bunny happily munches the carrot, claymation',cap:{ru:'Ням-ням!',kk:'Ням-ням!',tr:'Nam nam!',en:'Yum!'}}]},
+ {id:'owl',emoji:'🦉',name:{ru:'Ночной совёнок',kk:'Түнгі үкіш',tr:'Gece baykuşu',en:'Night Owl'},style:'water',ratio:'16:9',music:'lofi',dur:3.5,
+  hero:'a cute sleepy baby owl with big round eyes',title:{ru:'СОВЁНОК',kk:'ҮКІШ',tr:'BAYKUŞ',en:'NIGHT OWL'},
+  scenes:[
+   {prompt:'a baby owl wakes as stars appear over a quiet forest, watercolor',cap:{ru:'Ночь пришла.',kk:'Түн келді.',tr:'Gece geldi.',en:'Night is here.'}},
+   {prompt:'the owl glides silently between glowing trees, watercolor',cap:{ru:'Тихий полёт.',kk:'Тыныш ұшу.',tr:'Sessiz uçuş.',en:'Silent flight.'}},
+   {prompt:'the owl watches the sleeping forest from a branch, watercolor',cap:{ru:'Все спят.',kk:'Бәрі ұйықтап жатыр.',tr:'Herkes uyuyor.',en:'All asleep.'}},
+   {prompt:'the owl closes its eyes as dawn glows softly, watercolor',cap:{ru:'Сладких снов.',kk:'Тәтті түс.',tr:'Tatlı rüyalar.',en:'Sweet dreams.'}}]},
+ {id:'ghost',emoji:'👻',name:{ru:'Добрый призрак',kk:'Мейірімді елес',tr:'İyi hayalet',en:'Friendly Ghost'},style:'comic',ratio:'9:16',music:'lofi',dur:3,
+  hero:'a cute round friendly little ghost with a shy smile',title:{ru:'ДОБРЫЙ ПРИЗРАК',kk:'МЕЙІРІМДІ ЕЛЕС',tr:'İYİ HAYALET',en:'FRIENDLY GHOST'},
+  scenes:[
+   {prompt:'a cute little ghost floats out of an old cozy house at night, comic',cap:{ru:'Буу… привет!',kk:'Бу… сәлем!',tr:'Buu… merhaba!',en:'Boo… hi!'}},
+   {prompt:'the ghost tries to scare a cat but they become friends, comic',cap:{ru:'Не бойся!',kk:'Қорықпа!',tr:'Korkma!',en:"Don't be scared!"}},
+   {prompt:'the ghost and cat play with floating pumpkins, comic',cap:{ru:'Играем!',kk:'Ойнайық!',tr:'Oynayalım!',en:'Play time!'}},
+   {prompt:'the ghost and cat watch the moon together, cozy comic',cap:{ru:'Друзья навсегда.',kk:'Мәңгі дос.',tr:'Sonsuza dek dost.',en:'Friends forever.'}}]}
+];
+function renderTemplates(){
+  const box=$('#tplChips'); if(!box) return; box.innerHTML='';
+  TEMPLATES.forEach(tp=>{ const b=document.createElement('button'); b.textContent=tp.emoji+' '+L4(tp.name); b.onclick=()=>applyTemplate(tp); box.appendChild(b); });
+}
+function setRatio(r){
+  const map={'16:9':[1280,720],'9:16':[720,1280],'1:1':[1024,1024]}; const wh=map[r]||map['16:9'];
+  state.W=wh[0]; state.H=wh[1]; cv.width=state.W; cv.height=state.H; $('#stage').style.aspectRatio=state.W+'/'+state.H;
+  $('#ratio').querySelectorAll('button').forEach(b=>{ const on=(+b.dataset.w===state.W&&+b.dataset.h===state.H); b.classList.toggle('on',on); if(on)$('#badge').textContent=b.textContent; });
+}
+function applyTemplate(tp){
+  state.style=tp.style; $('#styleChips').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===tp.style));
+  setRatio(tp.ratio);
+  state.music=tp.music; $('#musicChips').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.p===tp.music));
+  state.dur=tp.dur; $('#dur').value=tp.dur; $('#durV').textContent=state.dur.toFixed(1).replace('.0','')+t('sec');
+  state.hero=tp.hero; $('#hero').value=tp.hero;
+  const ttl=L4(tp.title); state.title=ttl; state.episodes[state.ep].title=ttl; $('#title').value=ttl;
+  const scenes=tp.scenes.map(s=>({prompt:s.prompt,caption:L4(s.cap),img:null,url:null,seed:state.baseSeed}));
+  state.episodes[state.ep].scenes=scenes; state.scenes=scenes;
+  if(tp.narrator){ const nr=L4(tp.narrator); state.narrator=nr; state.episodes[state.ep].narrator=nr; $('#narrator').value=nr; }
+  invalidate(); renderScenes(); refreshStage(); toast(t('tpl_ok'));
+}
+
+let tT; function toast(m){ const el=$('#toast'); el.textContent=m; el.classList.add('show'); clearTimeout(tT); tT=setTimeout(()=>el.classList.remove('show'),2800); }
+function setStatus(t){ $('#status').textContent=t; }
+
+/* ================= MUSIC + VOICE (one audio graph) ================= */
+const PRESETS={
+  chill:{bpm:84,root:57,scale:[0,2,4,7,9],prog:[0,5,3,4],kick:false,wave:'sine',gain:.14,pad:true},
+  energetic:{bpm:126,root:52,scale:[0,2,4,5,7,9],prog:[0,3,4,4],kick:true,wave:'triangle',gain:.11,pad:false},
+  lofi:{bpm:72,root:48,scale:[0,3,5,7,10],prog:[0,5,3,4],kick:true,wave:'triangle',gain:.13,pad:true},
+  cinematic:{bpm:60,root:45,scale:[0,2,3,7,8],prog:[0,0,5,5],kick:false,wave:'sine',gain:.16,pad:true},
+};
+const Audio2={
+  ctx:null,master:null,musicGain:null,voiceGain:null,sfxGain:null,recDest:null,cfg:null,mode:'chill',customSrc:null,
+  schedTimer:null,step:0,nextTime:0,playing:false,
+  ensure(){
+    if(!this.ctx){
+      this.ctx=new (window.AudioContext||window.webkitAudioContext)();
+      this.master=this.ctx.createGain(); this.master.gain.value=1;
+      this.musicGain=this.ctx.createGain(); this.musicGain.gain.value=.55;
+      this.voiceGain=this.ctx.createGain(); this.voiceGain.gain.value=1;
+      this.sfxGain=this.ctx.createGain(); this.sfxGain.gain.value=.6;
+      this.musicGain.connect(this.master); this.voiceGain.connect(this.master); this.sfxGain.connect(this.master);
+      this.master.connect(this.ctx.destination);
+    }
+    if(this.ctx.state==='suspended') this.ctx.resume();
+  },
+  setMusic(name){ this.mode=name; this.cfg=PRESETS[name]||null; },
+  duck(on){ this.ensure(); this.musicGain.gain.value = on?0.24:0.55; },
+  freq(m){ return 440*Math.pow(2,(m-69)/12); },
+  note(midi,tm,dur,wave,gain){ const o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type=wave;o.frequency.value=this.freq(midi);
+    g.gain.setValueAtTime(0.0001,tm);g.gain.linearRampToValueAtTime(gain,tm+0.012);g.gain.exponentialRampToValueAtTime(0.0008,tm+dur);
+    o.connect(g);g.connect(this.musicGain);o.start(tm);o.stop(tm+dur+0.03); },
+  kick(tm){ const o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type='sine';o.frequency.setValueAtTime(140,tm);o.frequency.exponentialRampToValueAtTime(45,tm+0.12);
+    g.gain.setValueAtTime(0.9,tm);g.gain.exponentialRampToValueAtTime(0.001,tm+0.16);o.connect(g);g.connect(this.musicGain);o.start(tm);o.stop(tm+0.2); },
+  stepFn(step,tm){ const c=this.cfg,spb=60/c.bpm,scale=c.scale,bar=Math.floor(step/16),beat=step%16,off=c.prog[bar%c.prog.length];
+    const deg=scale[step%scale.length],oct=(beat%8<4)?12:24; this.note(c.root+off+deg+oct,tm,spb*0.9,c.wave,c.gain);
+    if(beat%4===0) this.note(c.root+off-12,tm,spb*1.6,'triangle',c.gain*0.9);
+    if(beat===0&&c.pad)[0,3,7].forEach(iv=>this.note(c.root+off+iv,tm,spb*3.6,'sine',c.gain*0.5));
+    if(c.kick&&beat%4===0) this.kick(tm); },
+  sched(){ const sp=(60/this.cfg.bpm)/4; this.step=0; this.nextTime=this.ctx.currentTime+0.06;
+    const loop=()=>{ if(!this.playing)return; while(this.nextTime<this.ctx.currentTime+0.12){ this.stepFn(this.step,this.nextTime); this.nextTime+=sp; this.step++; } this.schedTimer=setTimeout(loop,25); }; loop(); },
+  playMusic(){ if(this.mode==='none')return; this.ensure();
+    if(state.customMusic){ this.playCustom(state.customMusic); return; }
+    if(!this.cfg)return; this.playing=true; this.sched(); },
+  playCustom(buf){ this.stopCustom(); const s=this.ctx.createBufferSource(); s.buffer=buf; s.loop=true; s.connect(this.musicGain); try{s.start();}catch(e){} this.customSrc=s; },
+  stopCustom(){ if(this.customSrc){ try{this.customSrc.stop();}catch(e){} this.customSrc=null; } },
+  playBuffer(buf,at){ const s=this.ctx.createBufferSource(); s.buffer=buf; s.connect(this.voiceGain); s.start(at); },
+  playSfx(name,at){
+    this.ensure(); const c=this.ctx, out=this.sfxGain;
+    const tone=(type,f0,f1,t0,dur,vol)=>{ const o=c.createOscillator(),g=c.createGain(); o.type=type; o.frequency.setValueAtTime(f0,t0); if(f1!=null) o.frequency.exponentialRampToValueAtTime(f1,t0+dur);
+      g.gain.setValueAtTime(vol,t0); g.gain.exponentialRampToValueAtTime(0.0008,t0+dur); o.connect(g);g.connect(out);o.start(t0);o.stop(t0+dur+0.03); };
+    if(name==='pop'){ tone('sine',300,900,at,0.10,0.5); }
+    else if(name==='boing'){ tone('sine',700,120,at,0.38,0.5); tone('sine',350,90,at+0.02,0.34,0.25); }
+    else if(name==='ding'){ tone('sine',880,null,at,0.9,0.4); tone('sine',1320,null,at,0.8,0.15); }
+    else if(name==='drum'){ tone('triangle',400,120,at,0.14,0.5); }
+    else if(name==='sparkle'){ [1200,1600,2000,2600].forEach((f,i)=>tone('triangle',f,null,at+i*0.05,0.18,0.22)); }
+    else if(name==='whoosh'){
+      const dur=0.4, buf=c.createBuffer(1,Math.floor(c.sampleRate*dur),c.sampleRate), d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+      const src=c.createBufferSource(); src.buffer=buf; const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=0.9;
+      bp.frequency.setValueAtTime(400,at); bp.frequency.exponentialRampToValueAtTime(3200,at+dur);
+      const g=c.createGain(); g.gain.setValueAtTime(0.0001,at); g.gain.linearRampToValueAtTime(0.35,at+0.09); g.gain.exponentialRampToValueAtTime(0.001,at+dur);
+      src.connect(bp); bp.connect(g); g.connect(out); src.start(at); src.stop(at+dur);
+    }
+  },
+  playJingle(name,at){
+    if(!name||name==='none') return;
+    this.ensure(); const c=this.ctx, out=this.master, F=n=>440*Math.pow(2,(n-69)/12);
+    const hit=(f,t0,dur,vol,type)=>{ const o=c.createOscillator(),g=c.createGain(); o.type=type||'triangle'; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t0); g.gain.linearRampToValueAtTime(vol,t0+0.02); g.gain.exponentialRampToValueAtTime(0.0008,t0+dur);
+      o.connect(g);g.connect(out);o.start(t0);o.stop(t0+dur+0.05); };
+    if(name==='fanfare'){ [[60,0],[64,.12],[67,.24],[72,.36]].forEach(([n,d])=>hit(F(n),at+d,.5,.26,'sawtooth')); hit(F(72),at+.5,.8,.2,'sawtooth'); hit(F(76),at+.5,.8,.12,'sawtooth'); }
+    else if(name==='magic'){ [72,76,79,84,88].forEach((n,i)=>hit(F(n),at+i*0.07,.5,.2,'triangle')); [60,64,67].forEach(n=>hit(F(n),at+.1,1.3,.11,'sine')); }
+    else if(name==='playful'){ [67,72,67,74,79].forEach((n,i)=>hit(F(n),at+i*0.12,.28,.24,'square')); }
+  },
+  stop(){ this.playing=false; this.stopCustom(); if(this.schedTimer){clearTimeout(this.schedTimer);this.schedTimer=null;} },
+  connectRecord(){ this.ensure(); this.recDest=this.ctx.createMediaStreamDestination(); this.master.connect(this.recDest); return this.recDest; },
+  disconnectRecord(){ if(this.recDest){ try{this.master.disconnect(this.recDest);}catch(e){} this.recDest=null; } },
+};
+
+/* ================= TTS (free, keyless) ================= */
+const voiceCache=new Map();
+async function ttsBuffer(text,voice){
+  const key=voice+'|'+text;
+  if(voiceCache.has(key)) return voiceCache.get(key);
+  const url='https://text.pollinations.ai/'+encodeURIComponent(text)+'?model=openai-audio&voice='+voice;
+  const r=await fetch(url);
+  const ct=(r.headers.get('content-type')||'');
+  if(!r.ok || ct.indexOf('audio')===-1) throw new Error('tts');
+  const ab=await r.arrayBuffer();
+  Audio2.ensure();
+  const buf=await Audio2.ctx.decodeAudioData(ab.slice(0));
+  voiceCache.set(key,buf);
+  return buf;
+}
+async function prepareAudio(){
+  const out={map:{},narr:null};
+  const narrText=(state.narrator||'').trim();
+  if(!state.voice && !narrText) return out;
+  Audio2.ensure();
+  const vn = state.voice? state.voiceName : 'nova';
+  let fails=0, got=0;
+  if(state.voice){
+    const sc=readyScenes();
+    for(let i=0;i<sc.length;i++){
+      const line=(sc[i].caption||'').trim(); if(!line) continue;
+      const vv=(sc[i].voice&&sc[i].voice!=='default')?sc[i].voice:state.voiceName;
+      setStatus(t('st_voice')+' '+(i+1)+'…');
+      try{ out.map[i]=await ttsBuffer(line,vv); got++; }catch(e){ fails++; }
+    }
+  }
+  if(narrText){ setStatus(t('st_narr')); try{ out.narr=await ttsBuffer(narrText,vn); got++; }catch(e){ fails++; } }
+  if(fails && got===0) toast(t('voicefail'));
+  setStatus('');
+  return out;
+}
+function scheduleAudio(a, base){
+  if(introDur()>0 && state.jingle!=='none') Audio2.playJingle(state.jingle, base+0.1);
+  if(state.voice) Object.entries(a.map).forEach(([i,buf])=>Audio2.playBuffer(buf, base+introDur()+(+i)*state.dur+0.15));
+  if(a.narr) Audio2.playBuffer(a.narr, base+0.2);
+  const sc=readyScenes();
+  sc.forEach((s,i)=>{ if(s.sfx && s.sfx!=='none') Audio2.playSfx(s.sfx, base+introDur()+i*state.dur+0.05); });
+  if(state.sfx){ for(let i=1;i<sc.length;i++) Audio2.playSfx('whoosh', base+introDur()+i*state.dur); }
+  if(state.outro.on) Audio2.playSfx('ding', base+introDur()+sc.length*state.dur+0.1);
+}
+function voiceActive(){ return state.voice || (state.narrator||'').trim().length>0; }
+function sfxActive(){ return state.sfx || state.outro.on || (state.jingle!=='none' && hasIntro()) || state.scenes.some(s=>s.sfx&&s.sfx!=='none'); }
+
+/* ================= scenes ================= */
+function addScene(prompt,caption){ state.scenes.push({prompt:prompt||'',caption:caption||'',img:null,url:null,seed:state.baseSeed}); renderScenes(); }
+function renderScenes(){
+  const box=$('#sceneList'); if(!box) return; box.innerHTML='';
+  state.scenes.forEach((sc,i)=>{
+    const el=document.createElement('div'); el.className='scene';
+    const voiceOpts=['default|🎙 '+t('voice_def'),'nova|👩 '+t('voice_f'),'onyx|👨 '+t('voice_m'),'shimmer|😌 '+t('voice_soft'),'alloy|🤖 Alloy'];
+    el.innerHTML=
+      '<div class="thumb" data-i="'+i+'">'+(sc.url?'<img src="'+sc.url+'">':'<span class="ph">🖼</span>')+
+        '<span class="num">'+(i+1)+'</span><div class="regen">🔄</div></div>'+
+      '<div class="body">'+
+        '<input type="text" class="p" placeholder="'+t('sc_prompt')+'" value="'+esc(sc.prompt)+'">'+
+        '<input type="text" class="c" placeholder="'+t('sc_caption')+'" value="'+esc(sc.caption)+'">'+
+        '<div class="scrow">'+
+          '<select class="sfx" title="'+t('sfx_label')+'">'+
+            ['none|— '+t('sfx_label'),'pop|🫧 pop','boing|🤸 boing','whoosh|💨 whoosh','ding|🔔 ding','sparkle|✨ sparkle','drum|🥁 bam']
+              .map(o=>{const[v,l]=o.split('|');return '<option value="'+v+'"'+((sc.sfx||'none')===v?' selected':'')+'>'+l+'</option>';}).join('')+
+          '</select>'+
+          '<select class="scv" title="'+t('scv_label')+'">'+
+            voiceOpts.map(o=>{const[v,l]=o.split('|');return '<option value="'+v+'"'+((sc.voice||'default')===v?' selected':'')+'>'+l+'</option>';}).join('')+
+          '</select>'+
+        '</div>'+
+      '</div>'+
+      '<div class="scbtns">'+
+        '<button class="mv up" title="↑"'+(i===0?' disabled':'')+'>↑</button>'+
+        '<button class="mv dn" title="↓"'+(i===state.scenes.length-1?' disabled':'')+'>↓</button>'+
+        '<button class="mv dup" title="⎘">⎘</button>'+
+        '<button class="del">✕</button>'+
+      '</div>';
+    box.appendChild(el);
+    el.querySelector('.p').oninput=e=>{ state.scenes[i].prompt=e.target.value; invalidate(); };
+    el.querySelector('.c').oninput=e=>{ state.scenes[i].caption=e.target.value; invalidate(); renderIdle(); };
+    el.querySelector('.sfx').onchange=e=>{ state.scenes[i].sfx=e.target.value; invalidate(); };
+    el.querySelector('.scv').onchange=e=>{ state.scenes[i].voice=e.target.value; invalidate(); };
+    el.querySelector('.up').onclick=()=>moveScene(i,-1);
+    el.querySelector('.dn').onclick=()=>moveScene(i,1);
+    el.querySelector('.dup').onclick=()=>dupScene(i);
+    el.querySelector('.del').onclick=()=>{ state.scenes.splice(i,1); invalidate(); renderScenes(); refreshStage(); };
+    el.querySelector('.thumb').onclick=()=>{ if(sc.url) regenScene(i); };
+  });
+}
+function moveScene(i,d){ const j=i+d; if(j<0||j>=state.scenes.length)return; const a=state.scenes; [a[i],a[j]]=[a[j],a[i]]; invalidate(); renderScenes(); refreshStage(); }
+function dupScene(i){ const s=state.scenes[i]; state.scenes.splice(i+1,0,{prompt:s.prompt,caption:s.caption,sfx:s.sfx||'none',voice:s.voice||'default',img:s.img,url:s.url,seed:Math.floor(Math.random()*1e6)}); invalidate(); renderScenes(); refreshStage(); }
+function esc(s){ return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+/* ================= free image ================= */
+function fullPrompt(sc){ const hero=state.hero.trim()?state.hero.trim()+', ':''; return hero+(sc.prompt.trim()||'cartoon scene')+', '+STYLES[state.style]; }
+function loadPoll(prompt,seed,W,H){
+  return new Promise((resolve,reject)=>{
+    const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(prompt)+'?width='+W+'&height='+H+'&nologo=true&seed='+seed+'&model=flux';
+    const img=new Image(); img.crossOrigin='anonymous'; let done=false;
+    const to=setTimeout(()=>{ if(!done){done=true; reject(new Error('timeout'));} },70000);
+    img.onload=()=>{ if(done)return; done=true; clearTimeout(to); resolve({img,url}); };
+    img.onerror=()=>{ if(done)return; done=true; clearTimeout(to); reject(new Error('image')); };
+    img.src=url;
+  });
+}
+/* image-to-image: тот же герой по референс-картинке */
+function loadKontext(prompt,refUrl,seed){
+  return new Promise((resolve,reject)=>{
+    const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(prompt)+
+      '?model=kontext&nologo=true&seed='+seed+'&image='+encodeURIComponent(refUrl);
+    const img=new Image(); img.crossOrigin='anonymous'; let done=false;
+    const to=setTimeout(()=>{ if(!done){done=true; reject(new Error('timeout'));} },80000);
+    img.onload=()=>{ if(done)return; done=true; clearTimeout(to); resolve({img,url}); };
+    img.onerror=()=>{ if(done)return; done=true; clearTimeout(to); reject(new Error('kontext')); };
+    img.src=url;
+  });
+}
+/* необязательный бэкенд генерации (хостит фото-референс, ускоряет, canvas-safe) */
+let GEN_BACKEND='';
+function loadImgEl(url,cors){ return new Promise((res,rej)=>{ const i=new Image(); if(cors)i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=()=>rej(new Error('img')); i.src=url; }); }
+async function backendGen(prompt,opt){
+  const base=GEN_BACKEND.replace(/\/+$/,'');
+  const r=await fetch(base+'/generate',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({prompt,seed:opt.seed||0,model:opt.model||'flux',ref:opt.ref||'',width:opt.W||768,height:opt.H||768})});
+  if(!r.ok) throw new Error('backend '+r.status);
+  const blob=await r.blob(); const u=URL.createObjectURL(blob); const img=await loadImgEl(u,false); return {img,url:u};
+}
+async function uploadHeroPhoto(file){
+  if(!GEN_BACKEND){ toast(t('photo_need_backend')); return; }
+  const btn=$('#heroPhotoBtn'); btn.disabled=true; const old=btn.textContent; btn.innerHTML='<span class="spin"></span> '+t('photo_uploading');
+  try{
+    const base=GEN_BACKEND.replace(/\/+$/,''); const fd=new FormData(); fd.append('image',file);
+    const r=await fetch(base+'/upload-ref',{method:'POST',body:fd}); const j=await r.json();
+    if(!j||!j.url) throw new Error('upload');
+    state.heroRefUrl=j.url; state.heroRefImg=await loadImgEl(j.url,true); state.heroRefType='photo';
+    state.consistency=true; $('#consistOn').checked=true; renderHeroRef(); invalidate(); toast(t('photo_done'));
+  }catch(e){ toast(e.message||'✕'); }
+  btn.disabled=false; btn.textContent=old;
+}
+async function ensureHeroRef(){
+  if(state.heroRefUrl) return state.heroRefUrl;
+  const desc=(state.hero.trim()||'the main character')+', full body character reference sheet, clear face, front view, simple plain background, '+STYLES[state.style];
+  const {img,url}=await loadPoll(desc,state.baseSeed,768,768);
+  state.heroRefUrl=url; state.heroRefImg=img; state.heroRefType='gen'; renderHeroRef();
+  return url;
+}
+function renderHeroRef(){
+  const box=$('#heroRefPrev'); if(!box) return;
+  const src = (state.heroRefImg&&state.heroRefImg.src) || state.heroRefUrl;
+  box.innerHTML = src ? '<img src="'+src+'"><span>✓</span>' : '';
+}
+async function genAllFrames(){
+  const total=state.episodes.length, orig=state.ep;
+  const btn=$('#genAllBtn'); btn.disabled=true; const old=btn.textContent;
+  for(let i=0;i<total;i++){
+    loadEp(i); if(!state.scenes.length) continue;
+    btn.innerHTML='<span class="spin"></span> '+t('genall_status')+' '+(i+1)+'/'+total;
+    await generateFrames();
+    if(genCancel) break;
+  }
+  loadEp(orig); btn.disabled=false; btn.textContent=old; toast(t('genall_done'));
+}
+async function genSceneImg(sc){
+  if(state.consistency){
+    const ref=await ensureHeroRef();
+    const p='the exact same character from the reference image — keep the face, hair, colors and outfit identical. Now: '+(sc.prompt.trim()||'a scene')+'. '+STYLES[state.style];
+    try{ return GEN_BACKEND ? await backendGen(p,{model:'kontext',ref,seed:sc.seed}) : await loadKontext(p,ref,sc.seed); }catch(e){}
+  }
+  try{ return GEN_BACKEND ? await backendGen(fullPrompt(sc),{model:'flux',seed:sc.seed,W:state.W,H:state.H}) : await loadPoll(fullPrompt(sc),sc.seed,state.W,state.H); }
+  catch(e){ return await loadPoll(fullPrompt(sc),sc.seed,state.W,state.H); }
+}
+let genRunning=false, genCancel=false;
+async function generateFrames(){
+  if(!state.scenes.length){ toast(t('need_scene')); return; }
+  if(state.consistency) toast(t('consist_slow'));
+  const btn=$('#genBtn'); genRunning=true; genCancel=false; btn.dataset.lbl=btn.textContent; btn.textContent=t('gen_stop'); $('#prog').classList.add('on');
+  const n=state.scenes.length;
+  for(let i=0;i<n;i++){
+    if(genCancel) break;
+    setStatus(t('st_gen')+' '+(i+1)+' '+t('st_of')+' '+n+'…'); $('#progBar').style.width=Math.round(i/n*100)+'%';
+    const sc=state.scenes[i];
+    try{ const {img,url}=await genSceneImg(sc); sc.img=img; sc.url=url; sc.clipUrl=null; }
+    catch(e){ await sleep(2500); if(genCancel)break; try{ sc.seed=Math.floor(Math.random()*1e6); const r=await genSceneImg(sc); sc.img=r.img; sc.url=r.url; sc.clipUrl=null; }catch(e2){} }
+    renderScenes();
+    if(!genCancel && state.consistency && i<n-1) await sleep(1200);
+  }
+  const got=readyScenes().length;
+  $('#progBar').style.width='100%'; setStatus(genCancel?'':t('st_done')); await sleep(400); $('#prog').classList.remove('on');
+  genRunning=false; btn.textContent=btn.dataset.lbl||t('gen_btn');
+  invalidate(); refreshStage(); renderIdle();
+  if(!genCancel && got===0) toast(t('gen_fail'));
+}
+async function regenScene(i){
+  const sc=state.scenes[i]; sc.seed=Math.floor(Math.random()*1e6);
+  try{ const {img,url}=await genSceneImg(sc); sc.img=img; sc.url=url; sc.clipUrl=null; invalidate(); renderScenes(); renderIdle(); }catch(e){ toast(e.message); }
+}
+
+/* ================= drawing / timeline ================= */
+function readyScenes(){ return state.scenes.filter(s=>s.img); }
+function introTitle(){ return (state.seriesTitle.trim()||state.title.trim()); }
+function introSub(){ if(state.seriesTitle.trim()){ return t('ep_word')+' '+(state.ep+1)+(state.title.trim()?' · '+state.title.trim():''); } return ''; }
+function hasIntro(){ return !!(introTitle()||state.introImg); }
+function introDur(){ return hasIntro()? (state.introImg?2.8:2) : 0; }
+function outroDur(){ return state.outro.on? 2 : 0; }
+function totalDur(){ return introDur()+readyScenes().length*state.dur+outroDur(); }
+function drawCover(img,scale,panX,alpha){ const {W,H}=state,iw=img.naturalWidth,ih=img.naturalHeight,s=Math.max(W/iw,H/ih)*scale,dw=iw*s,dh=ih*s;
+  ctx.globalAlpha=alpha; ctx.drawImage(img,(W-dw)/2+panX,(H-dh)/2,dw,dh); ctx.globalAlpha=1; }
+function wrap(text,maxW){ const w=(text||'').split(/\s+/),l=[];let c='';for(const x of w){const tt=c?c+' '+x:x;if(ctx.measureText(tt).width>maxW&&c){l.push(c);c=x;}else c=tt;}if(c)l.push(c);return l; }
+function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function drawCaption(text,alpha){
+  if(!text||!text.trim())return; const {W,H}=state,fs=Math.round(W*0.036);
+  ctx.save(); ctx.globalAlpha=alpha; ctx.font='700 '+fs+'px "Baloo 2", sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  if(state.capStyle==='bubble'){
+    const pad=fs*0.75, lines=wrap(text.trim(),W*0.7), lh=fs*1.28;
+    let bw=0; lines.forEach(l=>bw=Math.max(bw,ctx.measureText(l).width)); bw=Math.min(W*0.9,bw+pad*2);
+    const bh=lines.length*lh+pad*1.2, bx=(W-bw)/2, by=H*0.85-bh;
+    ctx.fillStyle='#fff'; ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.lineWidth=fs*0.09;
+    roundRect(bx,by,bw,bh,fs*0.7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/2-fs*0.55,by+bh-2); ctx.lineTo(W/2-fs*0.05,by+bh+fs*0.75); ctx.lineTo(W/2+fs*0.6,by+bh-2); ctx.closePath(); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.fillStyle='#171226'; lines.forEach((l,i)=>ctx.fillText(l,W/2,by+pad*0.6+lh/2+i*lh));
+    ctx.restore(); return;
+  }
+  const lines=wrap(text.trim(),W*0.86),lh=fs*1.2,top=H*0.9-lines.length*lh,scrimH=lines.length*lh+fs*1.4;
+  const g=ctx.createLinearGradient(0,H-scrimH,0,H); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.55)'); ctx.fillStyle=g; ctx.fillRect(0,H-scrimH,W,scrimH);
+  ctx.shadowColor='rgba(0,0,0,.8)'; ctx.shadowBlur=fs*0.4;
+  lines.forEach((ln,k)=>{ const y=top+k*lh+lh/2; ctx.lineWidth=fs*0.16; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.strokeText(ln,W/2,y); ctx.fillStyle='#fff'; ctx.fillText(ln,W/2,y); });
+  ctx.restore();
+}
+function drawIntro(p){
+  const {W,H}=state; let A=p<0.2?p/0.2:(p>0.85?(1-p)/0.15:1); A=Math.max(0,Math.min(1,A));
+  if(state.introImg){
+    const img=state.introImg, sc=1.05+0.10*p, iw=img.naturalWidth,ih=img.naturalHeight,s=Math.max(W/iw,H/ih)*sc,dw=iw*s,dh=ih*s;
+    ctx.globalAlpha=1; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+    ctx.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
+    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(10,8,20,.35)'); g.addColorStop(1,'rgba(10,8,20,.75)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.save(); ctx.globalAlpha=A; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const fs=Math.round(W*0.09); ctx.font='800 '+fs+'px "Baloo 2", sans-serif'; ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=W*0.03; ctx.shadowOffsetY=W*0.006;
+    const lines=wrap((introTitle()||'').trim(),W*0.86),lh=fs*1.1, sub=introSub(), sf=Math.round(W*0.04), subH=sub?sf*1.8:0;
+    let y=H*0.5-(lines.length-1)*lh/2-subH/2; ctx.fillStyle='#fff'; lines.forEach(ln=>{ ctx.fillText(ln,W/2,y); y+=lh; });
+    if(sub){ ctx.font='600 '+sf+'px "Baloo 2", sans-serif'; ctx.globalAlpha=A*0.9; ctx.fillStyle='#ffd166'; ctx.fillText(sub,W/2,y+sf*0.4); }
+    ctx.restore();
+  } else {
+    drawTitle(introTitle(),introSub(),p);
+  }
+}
+function drawTitle(text,sub,p){
+  const {W,H}=state; let A=p<0.2?p/0.2:(p>0.85?(1-p)/0.15:1); A=Math.max(0,Math.min(1,A));
+  const g=ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#ff5d73'); g.addColorStop(.6,'#8b5cf6'); g.addColorStop(1,'#38e0c8');
+  ctx.save(); ctx.globalAlpha=A; ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ctx.textAlign='center'; ctx.textBaseline='middle';
+  const fs=Math.round(W*0.09); ctx.font='800 '+fs+'px "Baloo 2", sans-serif'; ctx.shadowColor='rgba(0,0,0,.25)'; ctx.shadowBlur=W*0.02; ctx.shadowOffsetY=W*0.008;
+  ctx.fillStyle='#fff'; const lines=wrap((text||'').trim(),W*0.8),lh=fs*1.1;
+  const sf=Math.round(W*0.04), hasSub=sub&&sub.trim(), subH=hasSub?sf*1.8:0;
+  let y=H/2-(lines.length-1)*lh/2-subH/2+(0.5-p)*W*0.02;
+  lines.forEach(ln=>{ ctx.fillText(ln,W/2,y); y+=lh; });
+  if(hasSub){ ctx.font='600 '+sf+'px "Baloo 2", sans-serif'; ctx.globalAlpha=A*0.92; ctx.fillText(sub.trim(),W/2,y+sf*0.4); }
+  ctx.restore();
+}
+function renderAt(time){
+  const {W,H,dur}=state; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  const sc=readyScenes(),iD=introDur(),oD=outroDur(),scenesT=sc.length*dur,T2=iD+scenesT+oD; if(T2<=0)return; if(time>=T2)time=T2-0.001; if(time<0)time=0;
+  if(iD && time<iD){ drawIntro(time/iD); return; }
+  const tp=time-iD;
+  if(tp<scenesT){
+    const idx=Math.floor(tp/dur),local=tp-idx*dur,p=local/dur,trans=0.5,k=local/trans;
+    const kb=1+0.10*p,pan=(idx%2?-1:1)*W*0.03*p;
+    if(idx>0 && local<trans){
+      const T=state.transType;
+      if(T==='slide'){
+        drawCover(sc[idx-1].img,1.10,-W*k+(idx%2?1:-1)*W*0.03,1); drawCaption(sc[idx-1].caption,1-k);
+        drawCover(sc[idx].img,kb,W*(1-k)+pan,1); drawCaption(sc[idx].caption,k);
+      } else if(T==='zoom'){
+        drawCover(sc[idx-1].img,1.10,(idx%2?1:-1)*W*0.03,1-k);
+        drawCover(sc[idx].img,kb*(1.12-0.12*k),pan,k); drawCaption(sc[idx].caption,k);
+      } else {
+        drawCover(sc[idx-1].img,1.10,(idx%2?1:-1)*W*0.03,1); drawCaption(sc[idx-1].caption,1-k);
+        drawCover(sc[idx].img,kb,pan,k); drawCaption(sc[idx].caption,k);
+      }
+    }
+    else { drawCover(sc[idx].img,kb,pan,1); drawCaption(sc[idx].caption,1); }
+    return;
+  }
+  if(oD) drawOutro((tp-scenesT)/oD);
+}
+function drawOutro(p){
+  const {W,H}=state; let A=p<0.2?p/0.2:(p>0.8?(1-p)/0.2:1); A=Math.max(0,Math.min(1,A));
+  const g=ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#38e0c8'); g.addColorStop(.5,'#8b5cf6'); g.addColorStop(1,'#ff5d73');
+  ctx.save(); ctx.globalAlpha=A; ctx.fillStyle=g; ctx.fillRect(0,0,W,H); ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,.25)'; ctx.shadowBlur=W*0.02; ctx.shadowOffsetY=W*0.008; ctx.fillStyle='#fff';
+  const big=(state.outro.text.trim()||t('out_end')), fs=Math.round(W*0.11);
+  ctx.font='800 '+fs+'px "Baloo 2", sans-serif';
+  const lines=wrap(big,W*0.8),lh=fs*1.05; let y=H/2-(lines.length-1)*lh/2-W*0.02+(0.5-p)*W*0.015; lines.forEach(l=>{ ctx.fillText(l,W/2,y); y+=lh; });
+  const sf=Math.round(W*0.045); ctx.font='700 '+sf+'px "Baloo 2", sans-serif'; ctx.globalAlpha=A*0.95; ctx.fillText(t('out_cta'),W/2,y+sf*0.6);
+  ctx.restore();
+}
+function renderIdle(){ if(readyScenes().length) renderAt(introDur()+0.01); }
+function refreshStage(){ const ready=readyScenes().length; $('#playBtn').disabled=$('#exportBtn').disabled=!ready; $('#empty').style.display=ready?'none':'flex'; if(ready) renderIdle(); }
+
+/* ================= preview ================= */
+let playing=false,raf=0,pStart=0;
+function stopPreview(){ playing=false; cancelAnimationFrame(raf); $('#playBtn').textContent=t('preview'); Audio2.stop(); }
+async function startPreview(){
+  if(!readyScenes().length)return;
+  $('#playBtn').disabled=true;
+  const audio=await prepareAudio();
+  $('#playBtn').disabled=false;
+  playing=true; pStart=performance.now(); $('#playBtn').textContent='⏹';
+  Audio2.setMusic(state.music); Audio2.duck(voiceActive()); Audio2.playMusic();
+  scheduleAudio(audio, Audio2.ctx?Audio2.ctx.currentTime:0);
+  const T2=totalDur()*1000;
+  const tick=now=>{ if(!playing)return; const tt=now-pStart; if(tt>=T2){ renderAt(totalDur()); stopPreview(); return; } renderAt(tt/1000); raf=requestAnimationFrame(tick); };
+  raf=requestAnimationFrame(tick);
+}
+$('#playBtn').onclick=()=>playing?stopPreview():startPreview();
+
+/* ================= export ================= */
+function pickMime(){ const c=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']; return c.find(m=>MediaRecorder.isTypeSupported(m))||'video/webm'; }
+async function toMp4(blob){
+  const base=$('#mp4url').value.trim().replace(/\/+$/,'');
+  const fd=new FormData(); fd.append('video',blob,'film.webm');
+  const r=await fetch(base+'/convert',{method:'POST',body:fd}); if(!r.ok) throw new Error('HTTP '+r.status); return await r.blob();
+}
+function dl(blob,name){ const u=URL.createObjectURL(blob),a=document.createElement('a'); a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); }
+
+async function buildFilm(){
+  if(!readyScenes().length)return null; stopPreview();
+  const stage=$('#stage'),badge=$('#badge'),ex=$('#exportBtn'),pl=$('#playBtn');
+  ex.disabled=pl.disabled=true; stage.classList.add('rec'); const prev=badge.textContent;
+  setStatus(t('building'));
+  const audio=await prepareAudio();
+  const hasAudio=(state.music!=='none')||voiceActive()||sfxActive();
+  const tracks=[...cv.captureStream(30).getVideoTracks()];
+  if(hasAudio){ const d=Audio2.connectRecord(); d.stream.getAudioTracks().forEach(x=>tracks.push(x)); }
+  let rec; try{ rec=new MediaRecorder(new MediaStream(tracks),{mimeType:pickMime(),videoBitsPerSecond:6500000}); }
+  catch(e){ toast('MediaRecorder N/A'); stage.classList.remove('rec'); ex.disabled=pl.disabled=false; return null; }
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data.size)chunks.push(e.data); };
+  const done=new Promise(r=>rec.onstop=r);
+  rec.start();
+  Audio2.setMusic(state.music); Audio2.duck(voiceActive()); Audio2.playMusic();
+  scheduleAudio(audio, Audio2.ctx?Audio2.ctx.currentTime:0);
+  const T2=totalDur()*1000,start=performance.now();
+  await new Promise(res=>{ const step=now=>{ const tt=now-start; badge.textContent='REC '+Math.min(100,Math.round(tt/T2*100))+'%';
+    if(tt>=T2){ renderAt(totalDur()); res(); return; } try{ renderAt(tt/1000); }catch(e){ res(); } requestAnimationFrame(step); }; requestAnimationFrame(step); });
+  rec.stop(); await done; Audio2.stop(); Audio2.disconnectRecord();
+  state.lastWebm=new Blob(chunks,{type:'video/webm'}); state.lastMp4=null;
+  if(state.lastWebm.size && $('#mp4on').checked && $('#mp4url').value.trim()){
+    badge.textContent='MP4…';
+    try{ state.lastMp4=await toMp4(state.lastWebm); }catch(e){ toast(t('mp4fail')); }
+  }
+  stage.classList.remove('rec'); badge.textContent=prev; ex.disabled=pl.disabled=false; setStatus('');
+  return deliverable();
+}
+function deliverable(){
+  if(state.lastMp4) return {blob:state.lastMp4,name:'multfilm_'+Date.now()+'.mp4',mime:'video/mp4'};
+  if(state.lastWebm && state.lastWebm.size) return {blob:state.lastWebm,name:'multfilm_'+Date.now()+'.webm',mime:'video/webm'};
+  return null;
+}
+async function ensureBuilt(){ if(!state.lastWebm) await buildFilm(); return deliverable(); }
+
+async function exportFilm(){ const d=await buildFilm(); if(d) dl(d.blob,d.name); }
+$('#exportBtn').onclick=exportFilm;
+
+/* ---- metadata + publish ---- */
+function metaText(){
+  const title=$('#metaTitle').value.trim(), desc=$('#metaDesc').value.trim(), tags=$('#metaTags').value.trim();
+  return [title,desc,tags].filter(Boolean).join('\n\n');
+}
+async function copyMeta(){ try{ await navigator.clipboard.writeText(metaText()); return true; }catch(e){ return false; } }
+$('#copyMetaBtn').onclick=async()=>{ if(await copyMeta()) toast(t('copied')); };
+
+$('#shareBtn').onclick=async()=>{
+  const d=await ensureBuilt(); if(!d)return;
+  const file=new File([d.blob],d.name,{type:d.mime});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:$('#metaTitle').value||'Мультфильм', text:metaText()}); }catch(e){}
+  } else { dl(d.blob,d.name); toast(t('share_fallback')); }
+};
+$('#ytBtn').onclick=async()=>{ const d=await ensureBuilt(); if(!d)return; dl(d.blob,d.name); await copyMeta(); window.open('https://www.youtube.com/upload','_blank'); toast(t('yt_hint')); };
+$('#ttBtn').onclick=async()=>{ const d=await ensureBuilt(); if(!d)return; dl(d.blob,d.name); await copyMeta(); window.open('https://www.tiktok.com/tiktokstudio/upload','_blank'); toast(t('tt_hint')); };
+
+$('#metaGen').onclick=async(e)=>{
+  e.stopPropagation();
+  const idea=$('#idea').value.trim()||state.title||readyScenes().map(s=>s.prompt).join(', ')||'cartoon';
+  const btn=$('#metaGen'); btn.disabled=true; const old=btn.textContent; btn.innerHTML='<span class="spin"></span>';
+  const ask='Ты SMM-специалист. По идее мультфильма: "'+idea+'" сделай метаданные для YouTube и TikTok на '+LANGNAME[L]+' языке. '+
+    'Ответь строго JSON без markdown: {"title":"цепляющий заголовок до 60 символов","description":"2-3 предложения","hashtags":["#тег1","#тег2","..."]}. 8 хэштегов.';
+  try{
+    const r=await fetch('https://text.pollinations.ai/'+encodeURIComponent(ask));
+    let txt=(await r.text()).replace(/```json|```/g,'').trim();
+    const o=JSON.parse(txt);
+    if(o.title) $('#metaTitle').value=o.title;
+    if(o.description) $('#metaDesc').value=o.description;
+    if(Array.isArray(o.hashtags)) $('#metaTags').value=o.hashtags.join(' ');
+    toast(t('meta_done'));
+  }catch(err){ toast('✕'); }
+  btn.disabled=false; btn.textContent=old;
+};
+
+/* ---- project save / load ---- */
+function encImg(img,max=1280,q=.82){ const iw=img.naturalWidth,ih=img.naturalHeight,s=Math.min(1,max/Math.max(iw,ih));
+  const c=document.createElement('canvas'); c.width=Math.round(iw*s); c.height=Math.round(ih*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height); return c.toDataURL('image/jpeg',q); }
+$('#saveProj').onclick=()=>{
+  const data={ v:3, lang:L, style:state.style, hero:state.hero, seriesTitle:state.seriesTitle,
+    W:state.W,H:state.H, dur:state.dur, music:state.music, voice:state.voice, voiceName:state.voiceName, sfx:state.sfx, jingle:state.jingle, outro:state.outro, capStyle:state.capStyle, transType:state.transType, consistency:state.consistency, heroRefUrl:state.heroRefUrl, heroRefType:state.heroRefType, heroRef:state.heroRefImg?encImg(state.heroRefImg,768,0.85):null, introImg:state.introImg?encImg(state.introImg,1280,0.8):null, ep:state.ep,
+    meta:{title:$('#metaTitle').value,desc:$('#metaDesc').value,tags:$('#metaTags').value},
+    episodes: state.episodes.map(e=>({ title:e.title, narrator:e.narrator,
+      scenes:e.scenes.map(s=>({prompt:s.prompt,caption:s.caption, sfx:s.sfx||'none', voice:s.voice||'default', img: s.img? encImg(s.img):null})) })) };
+  dl(new Blob([JSON.stringify(data)],{type:'application/json'}),'multserial_'+Date.now()+'.json'); dirty=false; toast(t('saved'));
+};
+$('#loadProj').onclick=()=>$('#projInput').click();
+$('#projInput').onchange=async e=>{
+  const f=e.target.files[0]; if(!f)return; e.target.value='';
+  let d; try{ d=JSON.parse(await f.text()); }catch(err){ toast('✕'); return; }
+  L=d.lang||L; state.style=d.style||'pixar'; state.hero=d.hero||''; state.seriesTitle=d.seriesTitle||'';
+  state.W=d.W||1280; state.H=d.H||720; cv.width=state.W; cv.height=state.H; $('#stage').style.aspectRatio=state.W+'/'+state.H;
+  state.dur=d.dur||3; state.music=d.music||'chill'; state.voice=!!d.voice; state.voiceName=d.voiceName||'nova'; state.sfx=d.sfx!==false; state.jingle=d.jingle||'magic'; state.outro=d.outro||{on:true,text:''}; state.capStyle=d.capStyle||'subtitle'; state.transType=d.transType||'fade'; state.consistency=!!d.consistency; state.heroRefUrl=d.heroRefUrl||null; state.heroRefType=d.heroRefType||null; state.heroRefImg=null; if(d.heroRef){ const hr=new Image(); hr.onload=async()=>{ state.heroRefImg=hr; renderHeroRef(); if(state.heroRefType==='photo' && GEN_BACKEND){ try{ const bl=await (await fetch(hr.src)).blob(); const fd=new FormData(); fd.append('image',bl,'ref.jpg'); const rr=await fetch(GEN_BACKEND.replace(/\/+$/,'')+'/upload-ref',{method:'POST',body:fd}); const jj=await rr.json(); if(jj&&jj.url) state.heroRefUrl=jj.url; }catch(e){} } }; hr.src=d.heroRef; } else if(state.heroRefUrl){ const hr=new Image(); hr.crossOrigin='anonymous'; hr.onload=()=>{state.heroRefImg=hr; renderHeroRef();}; hr.src=state.heroRefUrl; } state.introImg=null; state.introImgUrl=d.introImg||null; if(d.introImg){ const im=new Image(); im.onload=()=>{ state.introImg=im; renderIdle(); }; im.src=d.introImg; }
+  if(d.meta){ $('#metaTitle').value=d.meta.title||''; $('#metaDesc').value=d.meta.desc||''; $('#metaTags').value=d.meta.tags||''; }
+  const epList = d.episodes || [{title:d.title||'',narrator:d.narrator||'',scenes:d.scenes||[]}]; // v3 или старый формат
+  const eps=[];
+  for(const e of epList){
+    const scenes=await Promise.all((e.scenes||[]).map(s=>new Promise(res=>{
+      if(!s.img){ res({prompt:s.prompt||'',caption:s.caption||'',sfx:s.sfx||'none',voice:s.voice||'default',img:null,url:null,seed:state.baseSeed}); return; }
+      const im=new Image(); im.onload=()=>res({prompt:s.prompt||'',caption:s.caption||'',sfx:s.sfx||'none',voice:s.voice||'default',img:im,url:s.img,seed:state.baseSeed}); im.onerror=()=>res({prompt:s.prompt||'',caption:s.caption||'',sfx:s.sfx||'none',voice:s.voice||'default',img:null,url:null,seed:state.baseSeed}); im.src=s.img;
+    })));
+    eps.push({title:e.title||'',narrator:e.narrator||'',scenes});
+  }
+  state.episodes=eps.length?eps:[{title:'',narrator:'',scenes:[]}];
+  state.ep=Math.min(d.ep||0,state.episodes.length-1);
+  $('#seriesTitle').value=state.seriesTitle;
+  invalidate(); syncControls(); applyLang(); loadEp(state.ep); dirty=false; toast(t('loaded'));
+};
+function syncControls(){
+  $('#langbar').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.l===L));
+  $('#styleChips').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===state.style));
+  $('#musicChips').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.p===state.music));
+  $('#voiceSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.v===(state.voice?state.voiceName:'off')));
+  $('#ratio').querySelectorAll('button').forEach(b=>{ const on=(+b.dataset.w===state.W&&+b.dataset.h===state.H); b.classList.toggle('on',on); if(on)$('#badge').textContent=b.textContent; });
+  $('#dur').value=state.dur; $('#hero').value=state.hero; $('#title').value=state.title; $('#narrator').value=state.narrator;
+  $('#seriesTitle').value=state.seriesTitle; $('#sfxOn').checked=state.sfx; $('#jingleChips').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.j===state.jingle)); $('#outroOn').checked=state.outro.on; $('#outroText').value=state.outro.text; $('#transSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.tr===state.transType)); if($('#consistOn'))$('#consistOn').checked=state.consistency; renderHeroRef(); $('#capSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.cs===state.capStyle)); renderEpBar();
+}
+
+/* ================= AI storyboard (free) ================= */
+$('#autoBtn').onclick=async()=>{
+  const idea=$('#idea').value.trim(); if(!idea){ toast(t('need_idea')); return; }
+  const n=+$('#nScenes').value; const btn=$('#autoBtn'); btn.disabled=true; const old=btn.textContent; btn.innerHTML='<span class="spin"></span> '+t('st_think');
+  const ask='Придумай ровно '+n+' последовательных сцен для короткого мультфильма по идее: "'+idea+'". '+
+    'Ответь строго JSON-массивом без markdown и пояснений, формат: '+
+    '[{"scene":"краткое визуальное описание НА АНГЛИЙСКОМ для генерации картинки","line":"короткая реплика/подпись на '+LANGNAME[L]+' языке"}]. '+
+    'Ровно '+n+' элементов.';
+  try{
+    const r=await fetch('https://text.pollinations.ai/'+encodeURIComponent(ask));
+    let txt=await r.text(); txt=txt.replace(/```json|```/g,'').trim();
+    let arr; try{ arr=JSON.parse(txt); }catch(e){ arr=null; }
+    if(Array.isArray(arr)&&arr.length){
+      state.episodes[state.ep].scenes=arr.slice(0,n).map(o=>({prompt:(o.scene||o.prompt||'').toString(),caption:(o.line||o.caption||'').toString(),img:null,url:null,seed:state.baseSeed}));
+    }else{
+      let lines=txt.split('\n').map(s=>s.replace(/^\s*[-*\d.)\]]+\s*/,'').trim()).filter(s=>s.length>3).slice(0,n);
+      if(!lines.length) throw new Error('empty');
+      state.episodes[state.ep].scenes=lines.map(p=>({prompt:p,caption:'',img:null,url:null,seed:state.baseSeed}));
+    }
+    state.scenes=state.episodes[state.ep].scenes;
+    invalidate(); renderScenes(); refreshStage(); toast(state.scenes.length+' '+t('done_scenes'));
+  }catch(e){
+    state.episodes[state.ep].scenes=Array.from({length:n},()=>({prompt:'',caption:'',img:null,url:null,seed:state.baseSeed}));
+    state.scenes=state.episodes[state.ep].scenes;
+    renderScenes(); toast('✕ '+n);
+  }
+  btn.disabled=false; btn.textContent=old;
+};
+
+/* ================= series intro art ================= */
+async function generateIntroArt(){
+  const btn=$('#introGenBtn'); btn.disabled=true; const old=btn.textContent; btn.innerHTML='<span class="spin"></span>';
+  const desc=(state.seriesTitle.trim()||'animated series')+', '+(state.hero||'main character')+', epic title splash art, logo composition, '+STYLES[state.style]+', centered, cinematic';
+  try{ const {img,url}=await loadPoll(desc, state.baseSeed+777, state.W, state.H); state.introImg=img; state.introImgUrl=url; invalidate(); renderAt(introDur()*0.5); toast(t('intro_done')); }
+  catch(e){ toast(e.message); }
+  btn.disabled=false; btn.textContent=old;
+}
+function clearIntro(){ state.introImg=null; state.introImgUrl=null; invalidate(); renderIdle(); }
+$('#introGenBtn').onclick=generateIntroArt;
+$('#introClearBtn').onclick=clearIntro;
+seg('#jingleChips',b=>{ state.jingle=b.dataset.j; invalidate(); });
+
+/* ================= auto full series ================= */
+$('#seriesBtn').onclick=async()=>{
+  const idea=$('#idea').value.trim(); if(!idea){ toast(t('need_idea')); return; }
+  const nEps=+$('#nEps').value, nScn=+$('#nScenes').value;
+  const btn=$('#seriesBtn'); btn.disabled=true; const old=btn.textContent; btn.innerHTML='<span class="spin"></span> '+t('st_think');
+  const ask='Придумай сюжет мультсериала из '+nEps+' серий по общей идее: "'+idea+'". '+
+    'Для каждой серии придумай название и '+nScn+' последовательных сцен. Ответь строго JSON-массивом без markdown: '+
+    '[{"title":"название серии на '+LANGNAME[L]+' языке","scenes":[{"scene":"краткое визуальное описание НА АНГЛИЙСКОМ для картинки","line":"короткая реплика на '+LANGNAME[L]+' языке"}]}]. '+
+    'Ровно '+nEps+' серий и по '+nScn+' сцен.';
+  try{
+    const r=await fetch('https://text.pollinations.ai/'+encodeURIComponent(ask));
+    let txt=(await r.text()).replace(/```json|```/g,'').trim();
+    const arr=JSON.parse(txt);
+    if(!Array.isArray(arr)||!arr.length) throw new Error('bad');
+    state.episodes=arr.slice(0,nEps).map(ep=>({ title:(ep.title||'').toString(),narrator:'',
+      scenes:(ep.scenes||[]).slice(0,nScn).map(o=>({prompt:(o.scene||o.prompt||'').toString(),caption:(o.line||o.caption||'').toString(),sfx:'none',img:null,url:null,seed:state.baseSeed})) }));
+    if(!state.seriesTitle.trim()) state.seriesTitle=idea.slice(0,30);
+    $('#seriesTitle').value=state.seriesTitle; state.ep=0; invalidate(); loadEp(0);
+    toast(state.episodes.length+' '+t('series_done'));
+  }catch(e){
+    state.episodes=Array.from({length:nEps},()=>({title:'',narrator:'',scenes:[]})); state.ep=0; loadEp(0); toast('✕');
+  }
+  btn.disabled=false; btn.textContent=old;
+};
+
+/* ================= auto SFX by meaning ================= */
+const SFX_RULES=[
+  [/(jump|leap|hop|bounce|spring|boing)/i,'boing'],
+  [/(magic|spell|sparkl|glow|shine|star|fairy|wizard|glitter|twinkl|rainbow|unicorn|wand)/i,'sparkle'],
+  [/(hit|crash|bam|punch|smash|bump|fall|drop|collid|kick|explos|roar)/i,'drum'],
+  [/(fly|flies|flying|zoom|dash|run|running|speed|rush|swoosh|wind|rocket|launch|race|slide|swim|gallop|sail)/i,'whoosh'],
+  [/(win|won|success|ding|bell|reward|found|find|treasure|gold|complet|finish|victory|celebrat|hooray|yay)/i,'ding'],
+  [/(pop|appear|hatch|bubble|balloon|bloom)/i,'pop'],
+];
+$('#autoSfxBtn').onclick=()=>{
+  if(!state.scenes.length){ toast(t('need_scene')); return; }
+  state.scenes.forEach(s=>{ const txt=((s.prompt||'')+' '+(s.caption||'')).toLowerCase(); let pick='whoosh';
+    for(const [re,v] of SFX_RULES){ if(re.test(txt)){ pick=v; break; } } s.sfx=pick; });
+  invalidate(); renderScenes(); toast(t('sfx_done'));
+};
+
+/* ================= end credits + batch export ================= */
+$('#outroOn').onchange=e=>{ state.outro.on=e.target.checked; invalidate(); renderIdle(); };
+$('#outroText').oninput=e=>{ state.outro.text=e.target.value; invalidate(); };
+
+async function batchExport(){
+  const any=state.episodes.some(ep=>ep.scenes.some(s=>s.img));
+  if(!any){ toast(t('batch_empty')); return; }
+  const btn=$('#batchBtn'); btn.disabled=true; const old=btn.textContent;
+  const orig=state.ep, total=state.episodes.length; let built=0;
+  const base=(state.seriesTitle.trim()||'series').replace(/[^\w\u0400-\u04ff]+/g,'_').slice(0,24)||'series';
+  for(let i=0;i<total;i++){
+    loadEp(i);
+    if(!readyScenes().length) continue;
+    btn.textContent=t('batch_status')+' '+(i+1)+'/'+total+'…';
+    const d=await buildFilm();
+    if(d){ const ext=(d.mime==='video/mp4')?'mp4':'webm'; dl(d.blob, base+'_ep'+(i+1)+'.'+ext); built++; }
+    await sleep(700);
+  }
+  loadEp(orig); btn.disabled=false; btn.textContent=old; toast(built+' '+t('batch_done'));
+}
+$('#batchBtn').onclick=batchExport;
+
+/* ================= thumbnail ================= */
+async function makeThumb(){
+  const btn=$('#thumbBtn'); btn.disabled=true; const old=btn.textContent; btn.innerHTML='<span class="spin"></span>';
+  try{
+    let img=state.introImg||(readyScenes()[0]&&readyScenes()[0].img);
+    if(!img){ const d=await loadPoll((state.seriesTitle||'cartoon')+', '+(state.hero||'')+', '+STYLES[state.style]+', poster splash art', state.baseSeed+55, 1280,720); img=d.img; }
+    const W=1280,H=720, c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+    const iw=img.naturalWidth,ih=img.naturalHeight,s=Math.max(W/iw,H/ih),dw=iw*s,dh=ih*s;
+    x.drawImage(img,(W-dw)/2,(H-dh)/2,dw,dh);
+    const g=x.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(10,8,20,.1)'); g.addColorStop(1,'rgba(10,8,20,.85)'); x.fillStyle=g; x.fillRect(0,0,W,H);
+    x.fillStyle='#ff5d73'; x.fillRect(64,H-190,90,14);
+    const title=($('#metaTitle').value||state.seriesTitle||state.title||'CARTOON').toUpperCase();
+    x.textAlign='left'; x.textBaseline='alphabetic'; x.font='800 76px "Baloo 2", sans-serif';
+    x.shadowColor='rgba(0,0,0,.6)'; x.shadowBlur=14; x.shadowOffsetY=4;
+    const words=title.split(' '); let line='',ly=H-120; const lines=[];
+    for(const w of words){ const tst=line?line+' '+w:w; if(x.measureText(tst).width>W-140&&line){ lines.push(line); line=w; } else line=tst; } if(line) lines.push(line);
+    const show=lines.slice(-3); let yy=H-40-(show.length-1)*82;
+    x.fillStyle='#fff'; x.lineWidth=8; x.strokeStyle='rgba(0,0,0,.35)';
+    show.forEach(l=>{ x.strokeText(l,64,yy); x.fillText(l,64,yy); yy+=82; });
+    const url=c.toDataURL('image/png'); dl(await (await fetch(url)).blob(),'thumbnail_'+Date.now()+'.png'); toast(t('thumb_done'));
+  }catch(e){ toast(e.message||'✕'); }
+  btn.disabled=false; btn.textContent=old;
+}
+$('#thumbBtn').onclick=makeThumb;
+
+/* ================= post to Telegram channel ================= */
+$('#tgBtn').onclick=async()=>{
+  const base=$('#tgUrl').value.trim().replace(/\/+$/,''); if(!base){ toast(t('tg_need')); return; }
+  const d=await ensureBuilt(); if(!d) return;
+  const btn=$('#tgBtn'); btn.disabled=true; const old=btn.textContent; btn.innerHTML='<span class="spin"></span> '+t('tg_send');
+  try{
+    const fd=new FormData(); fd.append('video',d.blob,d.name); fd.append('caption',metaText());
+    const r=await fetch(base+'/send',{method:'POST',body:fd}); const j=await r.json().catch(()=>({}));
+    if(r.ok && j.ok!==false) toast(t('tg_done')); else throw new Error((j&&j.description)||('HTTP '+r.status));
+  }catch(e){ toast(t('tg_fail')+' '+(e.message||'')); }
+  btn.disabled=false; btn.textContent=old;
+};
+
+/* ================= build in 4 languages ================= */
+async function translateLine(text,lang){
+  if(!text||!text.trim()) return text||'';
+  try{ const ask='Переведи на '+LANGNAME[lang]+' язык. Ответь ТОЛЬКО переводом, без кавычек и пояснений: '+text;
+    const r=await fetch('https://text.pollinations.ai/'+encodeURIComponent(ask)); const out=(await r.text()).trim().split('\n')[0].replace(/^["'«»]|["'«»]$/g,''); return out||text; }
+  catch(e){ return text; }
+}
+async function buildAllLangs(){
+  if(!readyScenes().length){ toast(t('need_scene')); return; }
+  const btn=$('#multiBtn'); btn.disabled=true; const old=btn.textContent;
+  const langs=['ru','kk','tr','en'], origL=L;
+  const origCaps=state.scenes.map(s=>s.caption), origNarr=state.narrator, origOut=state.outro.text;
+  const base=(state.seriesTitle.trim()||'cartoon').replace(/[^\w\u0400-\u04ff]+/g,'_').slice(0,20)||'cartoon';
+  let built=0;
+  for(const lang of langs){
+    btn.innerHTML='<span class="spin"></span> '+t('multi_status')+': '+lang.toUpperCase()+' · '+t('translating');
+    for(let i=0;i<state.scenes.length;i++) state.scenes[i].caption=await translateLine(origCaps[i],lang);
+    state.narrator=await translateLine(origNarr,lang);
+    state.outro.text=''; L=lang; invalidate();
+    btn.innerHTML='<span class="spin"></span> '+t('multi_status')+': '+lang.toUpperCase();
+    const d=await buildFilm(); if(d){ const ext=(d.mime==='video/mp4')?'mp4':'webm'; dl(d.blob, base+'_'+lang+'.'+ext); built++; }
+    await sleep(600);
+  }
+  state.scenes.forEach((s,i)=>s.caption=origCaps[i]); state.narrator=origNarr; state.outro.text=origOut; L=origL;
+  invalidate(); applyLang(); renderScenes(); refreshStage();
+  btn.disabled=false; btn.textContent=old; toast(built+' '+t('multi_done'));
+}
+$('#multiBtn').onclick=buildAllLangs;
+
+/* ================= LIVE VIDEO (motion) ================= */
+function aspectStr(){ return state.W>state.H?'16:9':(state.W===state.H?'1:1':'9:16'); }
+async function animateScene(sc){
+  const base=GEN_BACKEND.replace(/\/+$/,'');
+  const prompt='animate this cartoon scene with natural motion, the character moves and comes alive: '+(sc.prompt||'')+', '+STYLES[state.style];
+  const r=await fetch(base+'/animate',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({frameUrl:sc.url, prompt, duration:Math.min(Math.round(state.dur)||5,8), aspectRatio:aspectStr()})});
+  if(!r.ok){ let d=''; try{ d=(await r.json()).error||''; }catch(e){} throw new Error(d||('HTTP '+r.status)); }
+  const blob=await r.blob(); if(sc.clipUrl){ try{URL.revokeObjectURL(sc.clipUrl);}catch(e){} }
+  sc.clipUrl=URL.createObjectURL(blob); return sc.clipUrl;
+}
+function drawVideoCover(v){ const {W,H}=state, iw=v.videoWidth||W, ih=v.videoHeight||H, s=Math.max(W/iw,H/ih), dw=iw*s, dh=ih*s; try{ ctx.drawImage(v,(W-dw)/2,(H-dh)/2,dw,dh); }catch(e){} }
+function scheduleAnimatedAudio(a, base, offsets, scenesEnd){
+  if(introDur()>0 && state.jingle!=='none') Audio2.playJingle(state.jingle, base+0.1);
+  if(a.narr) Audio2.playBuffer(a.narr, base+0.2);
+  const sc=readyScenes();
+  offsets.forEach((off,i)=>{
+    if(state.voice && a.map[i]) Audio2.playBuffer(a.map[i], base+off+0.15);
+    const s=sc[i]; if(s && s.sfx && s.sfx!=='none') Audio2.playSfx(s.sfx, base+off+0.05);
+    if(state.sfx && i>0) Audio2.playSfx('whoosh', base+off);
+  });
+  if(state.outro.on) Audio2.playSfx('ding', base+scenesEnd+0.1);
+}
+async function buildAnimated(){
+  if(!GEN_BACKEND){ toast(t('vid_need_backend')); return; }
+  const sc=readyScenes(); if(!sc.length){ toast(t('need_scene')); return; }
+  stopPreview();
+  const btn=$('#vidBtn'); btn.disabled=true; const old=btn.textContent; genCancel=false;
+  // 1) оживляем сцены (клипы)
+  for(let i=0;i<sc.length;i++){
+    if(!sc[i].clipUrl){ btn.innerHTML='<span class="spin"></span> '+t('vid_making')+' '+(i+1)+'/'+sc.length;
+      try{ await animateScene(sc[i]); }catch(e){ toast(t('vid_fail')+' '+(e.message||'')); } }
+  }
+  // 2) грузим видео-элементы (у кого нет клипа — статичный кадр)
+  const vids=[];
+  for(const s of sc){
+    if(s.clipUrl){ const v=document.createElement('video'); v.src=s.clipUrl; v.muted=true; v.playsInline=true; v.preload='auto';
+      await new Promise(r=>{ let d=false; v.onloadedmetadata=()=>{if(!d){d=true;r();}}; v.onerror=()=>{if(!d){d=true;r();}}; setTimeout(()=>{if(!d){d=true;r();}},8000); });
+      vids.push({s, v, dur:(v.duration&&isFinite(v.duration)&&v.duration>0.3)?v.duration:state.dur});
+    } else vids.push({s, v:null, dur:state.dur});
+  }
+  if(!vids.some(o=>o.v)){ toast(t('vid_fail')); btn.disabled=false; btn.textContent=old; return; }
+  // 3) запись
+  btn.innerHTML='<span class="spin"></span> '+t('vid_assembling');
+  const stage=$('#stage'),badge=$('#badge'),prev=badge.textContent; stage.classList.add('rec');
+  const audio=await prepareAudio();
+  const hasAudio=(state.music!=='none')||voiceActive()||sfxActive();
+  const tracks=[...cv.captureStream(30).getVideoTracks()];
+  if(hasAudio){ const d=Audio2.connectRecord(); d.stream.getAudioTracks().forEach(x=>tracks.push(x)); }
+  let rec; try{ rec=new MediaRecorder(new MediaStream(tracks),{mimeType:pickMime(),videoBitsPerSecond:7000000}); }
+  catch(e){ toast('MediaRecorder N/A'); stage.classList.remove('rec'); btn.disabled=false; btn.textContent=old; return; }
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data.size)chunks.push(e.data); }; const done=new Promise(r=>rec.onstop=r);
+  const iD=introDur(); let acc=iD; const offsets=vids.map(o=>{ const st=acc; acc+=o.dur; return st; }); const scenesEnd=acc, total=acc+outroDur();
+  rec.start();
+  Audio2.setMusic(state.music); Audio2.duck(voiceActive()); Audio2.playMusic();
+  scheduleAnimatedAudio(audio, Audio2.ctx?Audio2.ctx.currentTime:0, offsets, scenesEnd);
+  const start=performance.now(); let cur=-1;
+  await new Promise(res=>{ const step=now=>{ const tt=(now-start)/1000; badge.textContent='REC '+Math.min(100,Math.round(tt/total*100))+'%';
+    if(tt>=total){ res(); return; }
+    const {W,H}=state; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+    if(iD && tt<iD){ drawIntro(tt/iD); }
+    else if(tt<scenesEnd){
+      let idx=0; while(idx<offsets.length-1 && tt>=offsets[idx+1]) idx++;
+      if(idx!==cur){ cur=idx; const o=vids[idx]; if(o.v){ try{ o.v.currentTime=0; o.v.play(); }catch(e){} } }
+      const o=vids[idx];
+      if(o.v && o.v.readyState>=2) drawVideoCover(o.v);
+      else if(o.s.img){ const p=(tt-offsets[idx])/o.dur; drawCover(o.s.img,1.05+0.08*p,0,1); }
+      drawCaption(o.s.caption,1);
+    } else if(outroDur()){ drawOutro((tt-scenesEnd)/outroDur()); }
+    requestAnimationFrame(step);
+  }; requestAnimationFrame(step); });
+  rec.stop(); await done; Audio2.stop(); Audio2.disconnectRecord(); vids.forEach(o=>{ if(o.v){try{o.v.pause();}catch(e){}} });
+  stage.classList.remove('rec'); badge.textContent=prev;
+  const blob=new Blob(chunks,{type:'video/webm'}); state.lastWebm=blob; state.lastMp4=null;
+  if(blob.size) dl(blob,'multfilm_live_'+Date.now()+'.webm'); else toast('empty');
+  btn.disabled=false; btn.textContent=old;
+}
+$('#vidBtn').onclick=buildAnimated;
+
+/* ================= transition / caption style ================= */
+seg('#transSeg',b=>{ state.transType=b.dataset.tr; invalidate(); renderIdle(); });
+seg('#capSeg',b=>{ state.capStyle=b.dataset.cs; invalidate(); renderIdle(); });
+
+/* ================= GUIDE ================= */
+const GUIDE={
+ ru:`<h3>🎬 Как сделать мультик — полный гайд</h3>
+<p>Всё бесплатно и прямо в браузере. Кадры рисует ИИ, мультик собирается у тебя на устройстве.</p>
+<h4>⚡ Быстрый старт (3 шага)</h4>
+<ol><li>Открой <b>🎁 Шаблоны</b> и выбери любой — проект заполнится сам.</li>
+<li>Нажми <b>🎨 Сгенерировать кадры</b> и подожди (картинки появляются по одной).</li>
+<li>Нажми <b>⬇ Собрать мультфильм</b> — видео скачается.</li></ol>
+<div class="tip">Шаблон только заполняет сцены и тексты. Картинки рисуются именно после «Сгенерировать кадры».</div>
+<h4>🌐 Языки</h4><p>Вверху <b>Рус / Қаз / Türk / Eng</b> — меняет интерфейс, реплики шаблонов и язык озвучки.</p>
+<h4>💡 Идея</h4><p><b>✨ Придумать сцены</b> — ИИ сделает раскадровку по описанию. <b>✨ Весь сериал</b> — ИИ придумает сюжет сразу для нескольких серий.</p>
+<h4>🎨 Стиль и герой</h4><p>Выбери рисовку и подробно опиши <b>героя</b>. Стабильность лица во всех кадрах — 3 уровня:</p>
+<ul><li><b>🧬 Стабильный герой</b> (галочка) + <b>«Создать эталон героя»</b> — рисует эталон по описанию, дальше кадры делаются по нему.</li>
+<li><b>📷 Эталон из своего фото</b> — загрузи картинку/фото персонажа (нужен «Сервер генерации» ниже).</li>
+<li><b>Сервер генерации</b> — необязательный адрес Railway: хостит твоё фото, ускоряет и делает кадры надёжнее.</li></ul>
+<h4>📺 Серии</h4><p><b>＋ Серия</b> добавляет эпизод. Герой/стиль общие, у каждой серии своя раскадровка. <b>🎨 Кадры для всех серий</b> — сгенерировать всё разом.</p>
+<h4>🎞 Сцены</h4><p>Опиши кадр и реплику. Кнопки <b>↑ ↓</b> двигают сцену, <b>⎘</b> дублирует, <b>✕</b> удаляет. У каждой сцены — свой <b>звук</b> и свой <b>голос</b>. <b>🔊 Авто-звук</b> подберёт эффекты сам. Клик по миниатюре — перерисовать. Кнопка генерации во время работы становится <b>⏹ Стоп</b>.</p>
+<h4>🎬 Заставка сериала</h4><p><b>Джингл</b> в начале, <b>«Сгенерировать заставку»</b> — фирменная картинка, <b>«Титры в конце»</b> — концовка «КОНЕЦ · Подпишись».</p>
+<h4>🎬 Мультфильм</h4><p>Формат (9:16 для TikTok/Reels), секунды на сцену, <b>переход</b> (плавно/сдвиг/зум), <b>стиль реплик</b> (субтитры/облачко), музыка (или <b>🎵 своя музыка</b>), озвучка, <b>рассказчик</b> и <b>🎉 мультяшные звуки</b>.</p>
+<h4>⬇ Сборка</h4><p><b>Собрать мультфильм</b> — текущая серия. <b>📦 Собрать все серии</b> — по файлу на серию. <b>🌍 Собрать на 4 языках</b> — переведёт реплики и озвучит на всех языках.</p>
+<h4>🚀 Публикация</h4><p><b>Поделиться</b> — отправить видео в TikTok/YouTube/Telegram (на телефоне). <b>▶ YouTube / ♪ TikTok</b> — открыть загрузку. <b>🖼 Обложка</b> — превью для YouTube. <b>✨ Сгенерировать</b> — заголовок и хэштеги. <b>📢 Telegram-канал</b> — постинг через свой сервер.</p>
+<h4>💾 Проект</h4><p><b>Сохранить</b> — весь сериал в файл (кадры, эталон, настройки), <b>Открыть</b> — продолжить позже. Перед закрытием вкладки с несохранённым появится предупреждение.</p>
+<div class="tip">⏱ Одна серия — до ~2–3 минут (потолок браузера), сериал целиком — без ограничений. Стабильный герой и «своё фото» медленнее (лимит бесплатного сервиса ~15 сек). Если кадр не пришёл — приложение повторит; при тишине подожди минуту и нажми ещё раз.</div>`,
+ kk:`<h3>🎬 Мультфильм жасау — толық нұсқаулық</h3>
+<p>Бәрі тегін әрі браузерде. Кадрларды ИИ салады, мультфильм құрылғыңда жиналады.</p>
+<h4>⚡ Жылдам бастау (3 қадам)</h4>
+<ol><li><b>🎁 Үлгілер</b> ішінен біреуін таңда — жоба өзі толады.</li>
+<li><b>🎨 Кадрларды жасау</b> бас (суреттер бірінен соң бірі шығады).</li>
+<li><b>⬇ Мультфильм жинау</b> — видео жүктеледі.</li></ol>
+<div class="tip">Үлгі тек сахна мен мәтінді толтырады. Суреттер «Кадрларды жасау»-дан кейін салынады.</div>
+<h4>🌐 Тілдер</h4><p>Жоғарыда <b>Рус / Қаз / Türk / Eng</b> — интерфейс, реплика және дауыстау тілін ауыстырады.</p>
+<h4>💡 Идея</h4><p><b>✨ Сахна ойлап табу</b> — ИИ раскадровка жасайды. <b>✨ Бүкіл сериал</b> — бірнеше бөлімнің сюжетін ойлап табады.</p>
+<h4>🎨 Стиль мен кейіпкер</h4><p>Стильді таңда, <b>кейіпкерді</b> толық сипатта. Бет тұрақтылығы — 3 деңгей:</p>
+<ul><li><b>🧬 Тұрақты кейіпкер</b> + <b>«Эталон жасау»</b> — сипаттама бойынша эталон, кадрлар сол бойынша.</li>
+<li><b>📷 Өз фотоңнан эталон</b> — кейіпкер суретін жүкте («Генерация сервері» керек).</li>
+<li><b>Генерация сервері</b> — міндетті емес Railway мекенжайы: фотоны хостайды, жылдамдатады.</li></ul>
+<h4>📺 Бөлімдер</h4><p><b>＋ Бөлім</b> қосады. Герой/стиль ортақ, әр бөлімнің раскадровкасы бөлек. <b>🎨 Барлық бөлімге кадр</b> — бәрін бірден.</p>
+<h4>🎞 Сахналар</h4><p>Кадр мен репликаны жаз. <b>↑ ↓</b> жылжытады, <b>⎘</b> көшіреді, <b>✕</b> жояды. Әр сахнаның өз <b>дыбысы</b> мен <b>дауысы</b> бар. <b>🔊 Авто-дыбыс</b> өзі таңдайды. Жасау кезінде түйме <b>⏹ Тоқтату</b> болады.</p>
+<h4>🎬 Заставка</h4><p><b>Джингл</b>, <b>«Заставка жасау»</b> — фирмалық сурет, <b>«Соңында титрлер»</b> — соңы.</p>
+<h4>🎬 Мультфильм</h4><p>Формат, секунд, <b>ауысу</b>, <b>реплика стилі</b>, музыка (немесе <b>🎵 өз әнің</b>), дауыстау, <b>баяншы</b>, <b>🎉 дыбыстар</b>.</p>
+<h4>⬇ Жинау</h4><p><b>Мультфильм жинау</b> — ағымдағы бөлім. <b>📦 Барлық бөлім</b> — әрқайсысы бөлек. <b>🌍 4 тілде</b> — аударып, дауыстап шығарады.</p>
+<h4>🚀 Жариялау</h4><p><b>Бөлісу</b>, <b>▶ YouTube / ♪ TikTok</b>, <b>🖼 Мұқаба</b>, <b>✨ Метадеректер</b>, <b>📢 Telegram-канал</b> (өз серверің арқылы).</p>
+<h4>💾 Жоба</h4><p><b>Сақтау</b> / <b>Ашу</b>. Сақталмаған кезде жабу алдында ескерту шығады.</p>
+<div class="tip">⏱ Бір бөлім ~2–3 минутқа дейін, сериал шексіз. Тұрақты режим баяуырақ (~15 сек лимит). Кадр келмесе — қайталайды; тыныш болса, минут күтіп қайта бас.</div>`,
+ tr:`<h3>🎬 Çizgi film nasıl yapılır — tam rehber</h3>
+<p>Her şey ücretsiz ve tarayıcıda. Kareleri yapay zekâ çizer, film cihazında oluşur.</p>
+<h4>⚡ Hızlı başlangıç (3 adım)</h4>
+<ol><li><b>🎁 Şablonlar</b>'dan birini seç — proje kendi dolar.</li>
+<li><b>🎨 Kareleri oluştur</b>'a bas (görseller tek tek gelir).</li>
+<li><b>⬇ Çizgi filmi oluştur</b> — video iner.</li></ol>
+<div class="tip">Şablon sadece sahne ve metni doldurur. Görseller «Kareleri oluştur»dan sonra çizilir.</div>
+<h4>🌐 Diller</h4><p>Üstte <b>Рус / Қаз / Türk / Eng</b> — arayüz, replik ve seslendirme dilini değiştirir.</p>
+<h4>💡 Fikir</h4><p><b>✨ Sahne öner</b> — YZ storyboard yapar. <b>✨ Tüm dizi</b> — birkaç bölümün konusunu üretir.</p>
+<h4>🎨 Stil ve kahraman</h4><p>Stili seç, <b>kahramanı</b> ayrıntılı yaz. Yüz tutarlılığı — 3 seviye:</p>
+<ul><li><b>🧬 Tutarlı kahraman</b> + <b>«Referans oluştur»</b> — açıklamadan referans, kareler ona göre.</li>
+<li><b>📷 Kendi fotoğrafından</b> — karakter görselini yükle («Üretim sunucusu» gerekir).</li>
+<li><b>Üretim sunucusu</b> — isteğe bağlı Railway adresi: fotoğrafı barındırır, hızlandırır.</li></ul>
+<h4>📺 Bölümler</h4><p><b>＋ Bölüm</b> ekler. Kahraman/stil ortak, her bölümün storyboard'u ayrı. <b>🎨 Tüm bölümlere kare</b> — hepsi birden.</p>
+<h4>🎞 Sahneler</h4><p>Sahne ve repliği yaz. <b>↑ ↓</b> taşır, <b>⎘</b> çoğaltır, <b>✕</b> siler. Her sahnenin kendi <b>sesi</b> ve <b>seslendirmesi</b> var. <b>🔊 Otomatik ses</b> kendi seçer. Üretim sırasında düğme <b>⏹ Durdur</b> olur.</p>
+<h4>🎬 Jenerik</h4><p><b>Jingle</b>, <b>«Jenerik oluştur»</b>, <b>«Bölüm sonu»</b>.</p>
+<h4>🎬 Çizgi film</h4><p>Format, saniye, <b>geçiş</b>, <b>replik stili</b>, müzik (veya <b>🎵 kendi müziğin</b>), seslendirme, <b>anlatıcı</b>, <b>🎉 sesler</b>.</p>
+<h4>⬇ Oluşturma</h4><p><b>Çizgi filmi oluştur</b> — mevcut bölüm. <b>📦 Tüm bölümler</b> — ayrı dosya. <b>🌍 4 dilde</b> — çevirir ve seslendirir.</p>
+<h4>🚀 Yayınla</h4><p><b>Paylaş</b>, <b>▶ YouTube / ♪ TikTok</b>, <b>🖼 Kapak</b>, <b>✨ Meta</b>, <b>📢 Telegram kanalı</b> (kendi sunucunla).</p>
+<h4>💾 Proje</h4><p><b>Kaydet</b> / <b>Aç</b>. Kaydedilmemişken kapatmadan önce uyarı çıkar.</p>
+<div class="tip">⏱ Bir bölüm ~2–3 dakikaya kadar, dizi sınırsız. Tutarlı mod daha yavaş (~15 sn limit). Kare gelmezse tekrar dener; sessizse bir dakika bekleyip yeniden bas.</div>`,
+ en:`<h3>🎬 How to make a cartoon — full guide</h3>
+<p>All free, right in the browser. AI draws the frames, the cartoon is built on your device.</p>
+<h4>⚡ Quick start (3 steps)</h4>
+<ol><li>Open <b>🎁 Templates</b> and pick one — the project fills itself.</li>
+<li>Press <b>🎨 Generate frames</b> (images appear one by one).</li>
+<li>Press <b>⬇ Build cartoon</b> — the video downloads.</li></ol>
+<div class="tip">A template only fills scenes and text. Images are drawn after «Generate frames».</div>
+<h4>🌐 Languages</h4><p>Top bar <b>Рус / Қаз / Türk / Eng</b> switches UI, template lines and voiceover language.</p>
+<h4>💡 Idea</h4><p><b>✨ Suggest scenes</b> makes a storyboard. <b>✨ Whole series</b> writes plots for several episodes.</p>
+<h4>🎨 Style & hero</h4><p>Pick a style and describe the <b>hero</b> in detail. Face consistency — 3 levels:</p>
+<ul><li><b>🧬 Consistent hero</b> + <b>«Generate hero reference»</b> — a reference from the description; frames follow it.</li>
+<li><b>📷 Reference from your photo</b> — upload a character image (needs the «Generation server»).</li>
+<li><b>Generation server</b> — optional Railway URL: hosts your photo, speeds things up, more reliable.</li></ul>
+<h4>📺 Episodes</h4><p><b>＋ Episode</b> adds one. Shared hero/style, each episode has its own storyboard. <b>🎨 Frames for all episodes</b> — generate them all at once.</p>
+<h4>🎞 Scenes</h4><p>Write the scene and a line. <b>↑ ↓</b> move, <b>⎘</b> duplicate, <b>✕</b> delete. Each scene has its own <b>sound</b> and <b>voice</b>. <b>🔊 Auto sound</b> picks effects. During generation the button becomes <b>⏹ Stop</b>.</p>
+<h4>🎬 Series intro</h4><p><b>Jingle</b>, <b>«Generate intro art»</b>, <b>«End credits»</b>.</p>
+<h4>🎬 Cartoon</h4><p>Format, seconds, <b>transition</b>, <b>caption style</b>, music (or <b>🎵 your own</b>), voiceover, <b>narrator</b>, <b>🎉 cartoon sounds</b>.</p>
+<h4>⬇ Build</h4><p><b>Build cartoon</b> — current episode. <b>📦 All episodes</b> — one file each. <b>🌍 4 languages</b> — translates & voices in all languages.</p>
+<h4>🚀 Publish</h4><p><b>Share</b>, <b>▶ YouTube / ♪ TikTok</b>, <b>🖼 Thumbnail</b>, <b>✨ Metadata</b>, <b>📢 Telegram channel</b> (via your server).</p>
+<h4>💾 Project</h4><p><b>Save</b> / <b>Open</b>. You'll be warned before closing with unsaved work.</p>
+<div class="tip">⏱ One episode up to ~2–3 min, a series is unlimited. Consistent mode is slower (~15 s free limit). If a frame fails it retries; if nothing comes, wait a minute and press again.</div>`
+};
+function openGuide(){ $('#guideBody').innerHTML=GUIDE[L]||GUIDE.ru; $('#guideModal').classList.add('show'); }
+function closeGuide(){ $('#guideModal').classList.remove('show'); }
+$('#guideBtn').onclick=openGuide;
+$('#guideClose').onclick=closeGuide;
+$('#guideClose2').onclick=closeGuide;
+$('#guideModal').onclick=e=>{ if(e.target===$('#guideModal')) closeGuide(); };
+
+/* ================= controls ================= */
+function seg(sel,cb){ const el=$(sel); el.querySelectorAll('button').forEach(b=>b.onclick=()=>{ el.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); cb(b); }); }
+seg('#styleChips',b=>{ state.style=b.dataset.s; invalidate(); });
+seg('#musicChips',b=>{ state.music=b.dataset.p; invalidate(); });
+seg('#voiceSeg',b=>{ state.voice=b.dataset.v!=='off'; if(state.voice) state.voiceName=b.dataset.v; invalidate(); });
+seg('#ratio',b=>{ state.W=+b.dataset.w; state.H=+b.dataset.h; cv.width=state.W; cv.height=state.H; $('#stage').style.aspectRatio=state.W+'/'+state.H; $('#badge').textContent=b.textContent; invalidate(); refreshStage(); });
+$('#langbar').querySelectorAll('button').forEach(b=>b.onclick=()=>{ $('#langbar').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); L=b.dataset.l; applyLang(); });
+$('#nScenes').oninput=e=>$('#nsV').textContent=e.target.value;
+$('#nEps').oninput=e=>$('#nEpsV').textContent=e.target.value;
+$('#dur').oninput=e=>{ state.dur=+e.target.value; $('#durV').textContent=state.dur.toFixed(1).replace('.0','')+t('sec'); invalidate(); };
+$('#hero').oninput=e=>{ state.hero=e.target.value; state.heroRefUrl=null; state.heroRefImg=null; renderHeroRef(); };
+$('#consistOn').onchange=e=>{ state.consistency=e.target.checked; invalidate(); };
+$('#heroRefBtn').onclick=async()=>{
+  if(!state.hero.trim()){ toast(t('heroref_need')); return; }
+  const btn=$('#heroRefBtn'); btn.disabled=true; const old=btn.textContent; btn.innerHTML='<span class="spin"></span> '+t('heroref_making');
+  state.heroRefUrl=null;
+  try{ await ensureHeroRef(); if(!$('#consistOn').checked){ $('#consistOn').checked=true; state.consistency=true; } toast(t('heroref_done')); }
+  catch(e){ toast(e.message||'✕'); }
+  btn.disabled=false; btn.textContent=old;
+};
+$('#heroPhotoBtn').onclick=()=>{ if(!GEN_BACKEND){ toast(t('photo_need_backend')); return; } $('#heroPhotoInput').click(); };
+$('#heroPhotoInput').onchange=e=>{ const f=e.target.files[0]; if(f) uploadHeroPhoto(f); e.target.value=''; };
+$('#genBackend').oninput=e=>{ GEN_BACKEND=e.target.value.trim(); };
+$('#genAllBtn').onclick=genAllFrames;
+
+/* ---- своя музыка ---- */
+$('#ownMusicBtn').onclick=()=>$('#ownMusicInput').click();
+$('#ownMusicInput').onchange=async e=>{
+  const f=e.target.files[0]; if(!f)return; e.target.value='';
+  try{
+    Audio2.ensure(); const ab=await f.arrayBuffer(); const buf=await Audio2.ctx.decodeAudioData(ab.slice(0));
+    state.customMusic=buf; state.customMusicName=f.name;
+    if(state.music==='none'){ state.music='chill'; $('#musicChips').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.p==='chill')); }
+    $('#ownMusicName').textContent='🎵 '+f.name+'  ✕';
+    invalidate(); toast(t('music_loaded'));
+  }catch(err){ toast('✕ '+(err.message||'')); }
+};
+$('#ownMusicName').onclick=()=>{ if(!state.customMusic)return; state.customMusic=null; state.customMusicName=''; $('#ownMusicName').textContent=''; invalidate(); };
+$('#title').oninput=e=>{ state.title=e.target.value; state.episodes[state.ep].title=e.target.value; invalidate(); renderEpBar(); renderIdle(); };
+$('#narrator').oninput=e=>{ state.narrator=e.target.value; state.episodes[state.ep].narrator=e.target.value; invalidate(); };
+$('#seriesTitle').oninput=e=>{ state.seriesTitle=e.target.value; invalidate(); renderIdle(); };
+$('#sfxOn').onchange=e=>{ state.sfx=e.target.checked; invalidate(); };
+$('#addScene').onclick=()=>addScene();
+$('#genBtn').onclick=()=>{ if(genRunning){ genCancel=true; } else generateFrames(); };
+
+/* starter scenes in episode 1 */
+state.episodes[0].scenes=[
+  {prompt:'wide establishing shot, the hero looks up at the sky',caption:'',img:null,url:null,seed:state.baseSeed},
+  {prompt:'the hero discovers something magical',caption:'',img:null,url:null,seed:state.baseSeed},
+  {prompt:'close-up, the hero smiles with joy',caption:'',img:null,url:null,seed:state.baseSeed}
+];
+state.scenes=state.episodes[0].scenes;
+renderTemplates(); renderEpBar(); applyLang(); refreshStage();
+dirty=false;
+window.addEventListener('beforeunload',e=>{ if(dirty){ e.preventDefault(); e.returnValue=t('leave_warn'); return t('leave_warn'); } });
+</script>
+</body>
+</html>
